@@ -1,0 +1,38 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Editor de Classe</h3>
+        </div>
+            <div class="card">
+                <div class="card-body">
+                    <p class="col-sm-12">
+                    Modelo: {{ modelo.descricao }} <br>
+                    Data Criação: {{ modelo.data_criacao }} <br>
+                    Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
+                    </p>
+                </div> 
+            </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-body">
+	
+	<form method="POST" class="form-horizontal" enctype="multipart/form-data">
+	{% csrf_token %}
+		{{ form.as_p }}
+		<button type="submit" class="btn btn-success">Salvar</button>
+	</form>
+				</div> 
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

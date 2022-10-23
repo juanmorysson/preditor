@@ -1,0 +1,118 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Área de Interesse</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+                	<p>
+						Área: {{ area.descricao }} <br>
+						Projeto: {{ projeto.descricao }} <br>
+						Data Criação: {{ area.data_criacao }} <br>
+					</p>
+					<a href="/projeto/{{ projeto.pk }}/" class="btn btn-primary">
+	                    Voltar
+	                </a>
+				</div> 
+            </div>
+            <div class="card">
+            	<h3 class="card-title mb-0 p-10"> Declividade </h3>
+            	<table class="table user-table table-hover">
+					<tbody id="body_edital">
+						{% for ar in dec %}
+							<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/none/Declividade/Projeto">
+								<td >
+                    				{{ar|slice:"-15:"}}
+                    			</td>
+                    		</tr>
+                		{% endfor %}
+					</tbody>
+				</table>
+				<div class="card-body">
+	            	<a href="/declividade/gerar/{{ area.pk }}/" class="btn btn-primary">
+			        	Gerar
+			        </a>
+			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row btn btn-primary" data-href="{{area.pk}}/none/Declividade/Projeto">
+			        	Vizualizar
+			        </a>
+		    	</div>
+		    	
+            </div>
+            <div class="card">
+            	<h3 class="card-title mb-0 p-10"> Altitude </h3>
+            	<table class="table user-table table-hover">
+					<tbody id="body_edital">
+						{% for ar in alt %}
+							<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/none/Altitude/Projeto">
+								<td >
+                    				{{ar|slice:"-12:"}}
+                    			</td>
+                    		</tr>
+                		{% endfor %}
+					</tbody>
+				</table>
+		    	<div class="card-body">
+	            	<a href="/altitude/gerar/{{ area.pk }}/" class="btn btn-primary">
+			        	Gerar
+			        </a>
+			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row btn btn-primary" data-href="{{area.pk}}/none/Altitude/Projeto">
+			        	Vizualizar
+			        </a>
+		    	</div>
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-body">
+					<p class="col-sm-12">
+					{{ my_map|safe }}
+					</p>	
+				</div> 
+				<div class="card-body">
+					{{ area_m }} m²
+				</div>
+            </div>
+        </div>
+        <div class="col-sm-12">
+        	<h3 class="card-title mb-0 p-10"> Índices por data de Imagem (Stacks) </h3>
+        	<div class="col-sm-12">
+            	<div class="card">
+                	<div class="card-body">
+                		Selecionar data:
+                		<table class="table user-table table-hover">
+								<tbody id="body_edital">
+									{% for repo in repos %}
+										<tr onclick="window.location='../../stack/{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}';">
+											<td>
+												{{repo}} 
+											</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+					</div>
+				</div> 
+            </div>
+            
+        </div>
+
+    </div>
+
+{% endblock %}
+
+
+

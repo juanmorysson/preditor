@@ -1,0 +1,67 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Download</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <center>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="col-sm">
+                                De: <input type="date" name="data_ini" value="{{data_ini}}">
+                            </div>
+                            <div class="col-sm">
+                                Para: <input type="date"  name="data_fim" value="{{data_fim}}">
+                            </div>
+                            <button type="submit" formaction="/download">
+                                Download
+                            </button>
+                        </form>
+                    </center>
+                </div> 
+            </div>
+        </div>
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="col-sm-12">
+                    Arquivos Baixados (Biblioteca): 
+                    </p>
+                    <table class="table user-table table-hover">
+                        <thead>
+                          <tr>
+                           <th class="border-top-0">Arquivo / Pasta</th>
+                           <th class="border-top-0">Opções</th>
+                          </tr>
+                        </thead>
+                        <tbody id="body_edital">
+                            {% for ar in files %}
+                                <tr >
+                                    <td>{{ar|slice:"-30:"}}</td>
+                                    <td> 
+
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div> 
+            </div>
+        </div>
+    </div>
+{% endblock %}

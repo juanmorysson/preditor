@@ -1,0 +1,67 @@
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<link
+  href="  {% static 'css/cardes.css' %}"
+  rel="stylesheet"
+>
+
+{% load socialaccount %}
+<div class="container">
+  <div class="text-left">
+    <div class="login text-center">
+      <div id="mini">
+        <h2 class="container titulo-depoimentos">Login</h2>
+      </div>
+      <br>
+      {% if form.errors %}
+        <p>Usuário e senha inválido(s). Por favor, tente novamente.</p>
+      {% endif %}
+      
+      {% if next %}
+        {% if user.is_authenticated %}
+          <p>Sua conta não tem acesso a essa página. Para continuar, use uma conta com acesso permitido.</p>
+        {% else %}
+          <p>Por favor faça o login.</p>
+        {% endif %}
+      {% endif %}
+      <br>
+      <a href="{% provider_login_url 'google' %}"><button type="button" class="btn btn-info" style="width: 100%;"><i class="mdi me-2 mdi-google-plus" style="font-size: 20px;">Login With Google</i></button></a>
+        <br>
+        <br>
+    </div>
+  </div>
+    <!--
+    <div class="col-sm-6">
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="username">{{ form.username.label_tag }}</label>
+          <input type="text" class="form-control" name="username" autofocus maxlength="254" required id="id_username" />
+        </div>
+        <div class="form-group">
+          <label for="password">{{ form.password.label_tag }}</label>
+          <input type="password" name="password" class="form-control" required id="id_password" />
+        </div>
+        <div class="col-sm-2 col-xs-0"></div>
+        <input type="submit" value="login" class="btn btn-success col-sm-8 col-xs-12" />
+        <div class="col-sm-2 col-xs-0"></div>
+        <br>
+        <input type="hidden" name="next" value="{{ next }}" />
+      </form>
+    </div>
+    <div class="col-sm-3"></div>  
+      {# Assumes you setup the password_reset view in your URLconf #}
+      <div class="col-sm-4"></div>
+      <div class="col-sm-4">
+        <center>
+          <p>
+            <a href="{% url 'password_reset' %}">Esqueceu a senha?</a>
+          </p>
+        </center>
+      </div>
+      <div class="col-sm-2"></div>
+    -->
+</div>
+{% endblock %}

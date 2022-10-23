@@ -1,0 +1,62 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Stacks do Modelo</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-12">
+        	<h3 class="card-title mb-0 p-10">Modelo {{ modelo.descricao }}</h3>
+        	<div class="col-sm-12">
+	            <div class="card">
+	                <div class="card-body">
+							Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }} <br>
+							Data Criação: {{ modelo.data_criacao }} <br>
+							Stack: {{ modelo.stack }}<br>
+							<a href="/modelo/{{ modelo.pk }}/" class="btn btn-primary">
+	                        	Voltar
+	                    	</a>
+					</div> 
+	            </div>
+	        </div>
+		</div>
+		{% for al in list %}
+		<div class="col-sm-3">
+	        <h3 class="card-title mb-0 p-10"> Área: {{al.area}}
+			</h3>
+        	<div class="card">
+            	<div class="card-body">
+            		<table class="table user-table table-hover">
+							<tbody id="body_edital">
+								{% for arq in al.lista %}
+									<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{al.id}}/{{modelo.stack}}/{{arq.tipo}}/Modelo">
+										<td>
+											{{arq.desc}}
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+
+    </div>
+
+
+{% endblock %}
+
+
+

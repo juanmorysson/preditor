@@ -1,0 +1,246 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Modelo</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-8">
+        	<h3 class="card-title mb-0 p-10"> Descrição modelo </h3>
+            <div class="card">
+                <div class="card-body">
+					<p class="col-sm-12">
+					Modelo: {{ modelo.descricao }} <br>
+					Data Criação: {{ modelo.data_criacao }} <br>
+					Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
+					</p>
+					<a href="/modelo/{{ modelo.pk }}/edit/" class="btn btn-primary">
+                        Editar
+                    </a>
+				</div> 
+            </div>
+    		<h3 class="card-title mb-0 p-10"> Áreas Classificadas (Passo 2) </h3>
+        	<div class="card">
+            	<div class="card-body">
+            		<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
+		        		Nova Área
+		        	</a>
+            		<table class="table user-table table-hover">
+							<thead>
+								<tr>
+									<th class="border-top-0">
+										Descrição
+									</th>
+									<th class="border-top-0">
+										Classe
+									</th>
+									<th class="border-top-0">
+										Cor
+									</th>
+								</tr>
+							</thead>
+								<tbody id="body_edital">
+								{% for area in areas %}
+									<tr onclick="window.location='../../area_modelo/{{area.pk}}/';"">
+										<td>
+											{{area.descricao}} 
+										</td>
+										<td>
+											{{area.classe.classe}} 
+										</td>
+										<td style="background-color: {{area.classe.cor}}">
+											{{area.classe.cor}} 
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+				</div>
+			</div> 
+        </div>
+        <div class="col-sm-4">
+        	<h3 class="card-title mb-0 p-10"> Classificação do Modelo (Passo 1)</h3>
+        	<div class="col-sm-12">
+            	<div class="card">
+                	<div class="card-body">
+                		<a href="/classe_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
+		        		Nova Classe
+		        		</a>
+                		<table class="table user-table table-hover">
+							<tbody id="body_edital">
+								{% for classe in classes %}
+									<tr onclick="window.location='../../classe_modelo/{{classe.pk}}/';">
+										<td>
+											{{classe.classe}} 
+										</td>
+										<td style="background-color: {{classe.cor}}">
+											{{classe.cor}} 
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div> 
+            </div>
+        </div>
+    </div>
+	<form method="POST" enctype="multipart/form-data">
+			                            {% csrf_token %}
+    <div class="row">
+        <div class="col-sm-12">
+        	<h3 class="card-title mb-0 p-10"> Gerar Stack (Escolher Variáveis do Modelo ) </h3>
+        </div>
+
+    	<div class="col-sm-5">
+        	<div class="card">
+            	<div class="card-body">
+            		Selecionar data:
+            		<table class="table user-table table-hover">
+						<tbody id="body_edital">
+							{% for repo in repos %}
+								<tr>
+									<td>
+										{{repo}} 
+									</td>
+									<td>
+										<input type="checkbox" name="repo_{{repo.sat}}{{repo.level}}{{repo.data}}"
+											   {% if repo.marked %}
+											   checked="checked"
+											   {% endif %}
+										>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-5">
+        	<div class="card">
+            	<div class="card-body">
+            		Escolher Variáveis:
+            		<table class="table user-table table-hover">
+						<tbody id="body_edital">
+							{% for var in vars %}
+								<tr>
+									<td>
+										{{var.tag}}
+									</td>
+									<td>
+										<input type="checkbox" name="var_{{var.id}}"
+											   {% if var.marked %}
+											   checked="checked"
+											   {% endif %}
+										>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div> 
+        </div>
+        <div class="col-sm-2">
+        	<div class="card">
+            	<div class="card-body">
+            		Ações:
+					<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
+			             Gerar Stack
+			        </button>
+            		<a href="/modelo/ver_stacks/{{modelo.pk}}/" class="btn btn-secondary m-10">
+		        		Visualizar Stacks
+		        	</a>
+				</div>
+			</div> 
+        </div>
+    </div>
+	</form>
+    <div class="row">
+        <div class="col-sm-12">
+        	<h3 class="card-title mb-0 p-10"> Treinamento e Testes </h3>
+        </div>
+    	<div class="col-sm-5">
+        	<div class="card">
+            	<div class="card-body">
+            		Selecionar Modelo(s):
+            		<table class="table user-table table-hover">
+						<tbody id="body_edital">
+							{% for model in models %}
+								<tr>
+									<td>
+										{{model}} 
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-5">
+        	<div class="card">
+            	<div class="card-body">
+            		Confirgurações de Testes:
+				</div>
+			</div> 
+        </div>
+        <div class="col-sm-2">
+        	<div class="card">
+            	<div class="card-body">
+            		Ações:
+            		<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
+		        		Treinar
+		        	</a>
+		        	<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
+		        		Testar
+		        	</a>
+		        	<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
+		        		Treinar e Testar
+		        	</a>
+				</div>
+			</div> 
+        </div>
+        <div class="col-sm-8">
+        	<div class="card">
+            	<div class="card-body">
+            		Resultados:
+            		<table class="table user-table table-hover">
+						<tbody id="body_edital">
+							{% for model in models %}
+								<tr>
+									<td>
+										{{model}} 
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="col-sm-4">
+        	<div class="card">
+            	<div class="card-body">
+            		AIC:
+				</div>
+			</div>
+		</div>
+    </div>
+</div>
+{% endblock %}
+
+
+

@@ -1,0 +1,79 @@
+# Treinamento
+
+
+# Segurança:
+	- permissões de acesso por tela
+	- permissões por projeto
+	- fazer cadastro obrigatório para ter acesso às telas padrão
+	- listar apenas projetos e modelos do "dono"
+
+# Layout
+	- mudar para cor mais clara 
+	- inserir informações do IFPI e IFgoiano
+	- cores botões - ok
+	- aproveitar melhor os espaços 
+	- criar logo do preditor em T - ok
+	- menu esquerdo
+		- desfazer menu???? - colocar superio????
+		- modificar icones para cada menu
+		- separar menu de ferramentas extras
+		- reduzir menu esquerdo a hamburguinho
+
+
+# Ferramenta
+	# Telas:
+		# projeto_open
+			- desativar ou não exibir botão de analisar qd não tem demarcação
+	# Demarcar área
+		- deixar botão mais vizível
+		- salvar o geojson direto no projeto
+
+	# download de imagens
+		- automática?
+		- fazer funcionar com Level 2A
+
+	# extrair imagens da área
+		- criar funcionalidade de fazer stack com índices por data
+			- filtrar datas por imagens baixadas do Sentinel Level 2A
+				- listar pastas de repositório - ok
+*				- fazer busca por data
+			- verificar percentual de nuvens
+				- escolher visualmente? - ok
+				- calcular ?
+			- gerar stack por índices
+				- outros índices
+				    - fazer tela de cadastrar indices
+		- datum: Sirgas (Brasil)
+			- verificar se é necessário e possível usar
+
+	# Gerar modelo 
+		- separar lista de indices e cortes
+		    - listar inidices só publicos ou de resposabilidade do usuário
+		- gerar modelos
+		    - verificar as restrições de cada modelo
+
+	# Qualificar Imagem pelo modelo
+		- testar de leitura do modelo
+			- *********
+		- extrair dados:
+			- só os dados mais importantes?
+		- rodar no modelo
+		- exibir mapa qualitativo
+		- exibir relatório
+			- acurácia;
+			...
+
+	# progresso
+		- atualizar automáticamente a página de progressos
+		- como "matar" os progressos que foram perdidos no sistema?
+
+
+	# Outras funcionalidades (não ligadas a projetos):
+		- o proprio usuário escolhe as imagens
+		- ndvi 
+			- desligar dos projetos
+		- trÊs cores
+
+
+	# ver qual o melhor produto - ok
+		1c ou 2A ou 2B - usar 2A pq corrige sobre TOA

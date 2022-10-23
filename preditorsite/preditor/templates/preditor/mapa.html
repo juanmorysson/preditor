@@ -1,0 +1,52 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Mapa</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body" id="sandbox-container">
+                    Área: {{ area.descricao }} <br>
+                    Projeto: {{ area.projeto.descricao }} <br>
+                    Data Criação: {{ area.data_criacao }} <br>
+                </div> 
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+                    <p class="col-sm-12">
+                    <a href="/area/{{ area.pk }}/" class="btn btn-primary">
+                        Voltar
+                    </a>    
+                </div> 
+            </div>
+        </div>
+        <div class="col-sm-12">
+            <div class="card">
+                <div class="card-body">
+                    <center>
+                        {% if my_map %}
+                            {{ my_map|safe }}
+                        {% else %}
+                            ...
+                        {% endif %}
+                    </center>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
