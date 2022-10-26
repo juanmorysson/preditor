@@ -1,7 +1,8 @@
+import pandas as pd
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from .class_utils import *
-from .models import Projeto, BarraProgresso, Area, Modelo, ClasseModelo, AreaModelo, Raster_Modelo, Raster, Satelite
+from .models import *
 from .forms import ProjetoForm, AreaForm, ModeloForm, ClasseModeloForm, AreaModeloForm
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
@@ -88,7 +89,22 @@ def modelo_open(request, pk):
 			for area in areas2:
 				areas.append(area)
 	repos = utils.list_repositorios(modelo.stack)
-	return render(request, 'preditor/modelo_open.html', {'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos})
+	models = ArquivoModelo.objects.filter(modelo=modelo)
+	tipo_models = TipoArquivoModelo.objects.all()
+
+	target_ok = False
+	y_ok = False
+	status = "Dados não Preparados"
+	for item in os.listdir(path):
+		if item == "target_train.txt":
+			target_ok = True
+			print("achou target")
+		if item == "target_train.txt":
+			y_ok = True
+			print("achou y")
+	if (target_ok and y_ok):
+		status = "Dados Preparados para: Treinos ("+modelo.percent+"%)  e Testes ("+str(100-int(modelo.percent))+"%)"
+	return render(request, 'preditor/modelo_open.html', {'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
 
 def gerar_stacks_modelo (request, pk):
 	stack = ""
@@ -114,6 +130,119 @@ def gerar_stacks_modelo (request, pk):
 			rasters.append(r)
 	cortarModelo(pk, stack, rasters)
 	return redirect('modelo_open', pk=pk)
+
+def prepararDataFrameModelo_Request(request, pk):
+	percent = request.POST['percent']
+	prepararDataFrameModelo(pk, percent)
+	return redirect('modelo_open', pk=pk)
+def prepararDataFrameModelo(pk, percent):
+	modelo = Modelo.objects.get(pk=pk)
+	s = "Sentinel" + modelo.stack[2:4]
+	sats = Satelite.objects.filter(descricao=s)
+	sat = None
+	for s in sats:
+		sat = s
+	rms = Raster_Modelo.objects.filter(modelo=modelo)
+	classes = ClasseModelo.objects.filter(modelo=modelo)
+	areas = AreaModelo.objects.filter(classe__in=classes)
+
+	target = pd.DataFrame()
+	y = pd.Series()
+	for area in areas:
+		dfArea = pd.DataFrame()
+		id = str(area.pk)
+		print("Iniciando área" + id)
+		for rm in rms:
+			path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id
+			r = rm.raster
+			nome = r.tag
+			if r.isIndex:
+				if r.formula is None:
+					path = path + '\\'
+					nome = nome.lower()
+					print(r.tag)
+				else:
+					path = path + '\\' + modelo.stack + '\\indices\\'
+			else:
+				path = path + '\\' + modelo.stack + '\\cortes\\'
+				rb = RasterBand.objects.get(satelite=sat, raster=r)
+				nome = rb.band
+			raster = rasterio.open(path + nome + '.tif')
+			array = raster.read(1)
+			nn = np.array(array)
+			val = nn.flatten()
+			vv = pd.Series(val)
+			dfArea[r.tag] = vv
+		dfArea = dfArea.dropna()
+		target = pd.concat([target, dfArea])
+		yArea = pd.Series([area.classe.classe] * len(dfArea.index))
+		y = pd.concat([y, yArea])
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	#target.reset_index(inplace=True)
+	print("Gerando arquivo target")
+	delimiter =";"
+	head = ''
+	for item in target.columns:
+		head = head + delimiter + item
+	head = head[len(delimiter):]
+	print(head)
+	np.savetxt(r''+path_model+"target_train.txt", target.values, fmt='%d', delimiter=delimiter, header=head)
+	print("Gerando arquivo y")
+	np.savetxt(r''+path_model+"y_train.txt", y.values, fmt='%s')
+	modelo.percent = str(percent)
+	modelo.save()
+
+def treinar_Request(request, pk):
+	percent = request.POST['percent']
+	for k, v in request.POST.lists():
+		if k.startswith('model_'):
+			id = k[6:]
+			treinar(percent,pk, int(id))
+	return redirect('modelo_open', pk=pk)
+def treinar(percent, pk, pk_me):
+	modelo = Modelo.objects.get(pk=pk)
+	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	target_ok = False
+	y_ok = False
+	for item in os.listdir(path):
+		if item == "target_train.txt":
+			target_ok = True
+			print("achou target")
+		if item == "target_train.txt":
+			y_ok = True
+			print("achou y")
+	if(target_ok and y_ok):
+		print("Arquivos já gerados")
+	else:
+		prepararDataFrameModelo(pk,percent)
+	#ler arquivos
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	print("Lendo target")
+	target = np.loadtxt(r''+path_model+"target_train.txt", delimiter=";")
+	print(target.shape)
+	print("Lendo y")
+	y = np.loadtxt(r''+path_model+"y_train.txt", dtype='str', delimiter="&&")
+	print(y.shape)
+	#Treinar Modelo
+	print("Treinando modelo" + str(pk_me))
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	if os.path.isdir(path_model):
+		print("path Já Criado")
+	else:
+		os.mkdir(path_model)
+	tipo = TipoArquivoModelo.objects.get(pk=pk_me)
+	ia.treinar_modelo(target, y, tipo, path_model)
+	#salvar treinamento
+	arq_modelo = None
+	try:
+		arq_modelo = ArquivoModelo.objects.get(modelo=modelo, tipo=tipo)
+	except ArquivoModelo.DoesNotExist:
+		arq_modelo = ArquivoModelo()
+	arq_modelo.tipo = tipo
+	arq_modelo.modelo = modelo
+	arq_modelo.data_treinmaneto = timezone.now()
+	arq_modelo.data_teste = None
+	arq_modelo.save()
 
 def ver_stacks_modelo (request, pk):
 	modelo = Modelo.objects.get(pk=pk)
@@ -177,10 +306,11 @@ def modelo_edit(request, pk):
         if form.is_valid():
             modelo = form.save(commit=False)
             pasta=request.POST['pasta'].replace(" ", "")
-            modelo.pasta = pasta
-            os.rename(
-            	os.path.join('arquivos/modelos/', pasta_old),
-            	os.path.join('arquivos/modelos/', pasta)) 
+            try:
+            	modelo.pasta = pasta
+            	os.rename(os.path.join('arquivos/modelos/', pasta_old),os.path.join('arquivos/modelos/', pasta))
+            except:
+            	print("não mudou a pasta: Acesso negado")
             modelo.save()
             return redirect('modelo_open', pk=modelo.pk)
     else:
@@ -352,6 +482,7 @@ def stack(request, pk, stack):
     request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
     area = Area.objects.get(pk=pk)
     projeto = Projeto.objects.get(pk=area.projeto.pk)
+    r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
     repo = RepoSentinel()
     repo.level = stack[2:4]
     repo.data = stack[4:13]
@@ -384,7 +515,7 @@ def stack(request, pk, stack):
 #    				dir = dirpath[l-len(dirpath):]
 #    			arquivo.desc = '{}/{}'.format(dir, file)
 #    			indices.append(arquivo)
-    return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'cortes': cortes, 'repo':repo })
+    return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'r_indices':r_indices, 'cortes': cortes, 'repo':repo })
 
 
 def projeto_new(request):
@@ -983,7 +1114,47 @@ def ndvi(request, pk, stack):
 
 	return redirect('stack', pk, stack) 
 
+def gerar_indices_area(request, pk, stack):
+	area = Area.objects.get(pk=pk)
+	projeto = Projeto.objects.get(pk=area.projeto.pk)
+	repo = RepoSentinel()
+	repo.level = stack[2:4]
+	repo.data = stack[4:13]
+	repo.sat = stack[0:2]
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	s = "Sentinel" + repo.level
+	sats = Satelite.objects.filter(descricao=s)
+	sat = None
+	for s in sats:
+		sat = s
+	for k, v in request.POST.lists():
+		if k.startswith('ind_'):
+			ipk = k[4:len(k)]
+			r = Raster.objects.get(pk=int(ipk))
+			src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+			raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
+			calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
 
+	return redirect('stack', pk, stack)
+def gerar_indice_area(request, pk, stack, pk_indice):
+	area = Area.objects.get(pk=pk)
+	projeto = Projeto.objects.get(pk=area.projeto.pk)
+	repo = RepoSentinel()
+	repo.level = stack[2:4]
+	repo.data = stack[4:13]
+	repo.sat = stack[0:2]
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	s = "Sentinel" + repo.level
+	sats = Satelite.objects.filter(descricao=s)
+	sat = None
+	for s in sats:
+		sat = s
+	r = Raster.objects.get(pk=pk_indice)
+	src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+	raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
+	calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
+
+	return redirect('stack', pk, stack)
 def ndvi2(request, pk, stack):
 	projeto = get_object_or_404(Projeto, pk=request.session.get('projeto_pk'))
 	progresso = progress.progress_create(projeto, "ndvi", request)

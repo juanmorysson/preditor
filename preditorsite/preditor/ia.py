@@ -2,8 +2,29 @@ import sys, os, struct
 import rasterio
 from sklearn.linear_model import LinearRegression as lm
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier as rfc
 from sklearn.datasets import make_classification
+from sklearn.neural_network import MLPClassifier as rn
+import joblib
+
+def treinar_modelo(target, y, tipo, path):
+	model_run = False
+	model = None
+	if tipo.tag == "rf":
+		model = rfc(max_depth=2, random_state=0)
+		model.fit(target, y)
+		model_run = True
+	if tipo.tag == "rn":
+		model = rn(solver='lbfgs', alpha=1e-5,hidden_layer_sizes = (5, 2), random_state = 1)
+		model.fit(target, y)
+		model_run = True
+	if tipo.tag == "svm":
+		model = svm.SVC()
+		model.fit(target, y)
+		model_run = True
+	filename = tipo.filename + '.sav'
+	if model_run:
+		joblib.dump(model, path+filename)
 
 def modelo_linear(x, y):
 	modelo = lm.fit(x, y)

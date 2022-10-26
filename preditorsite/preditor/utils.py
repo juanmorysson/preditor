@@ -113,6 +113,11 @@ def list_repositorios(stack_marked = ''):
 
 	return repos
 
+def list_filesinfolder(path):
+	files = []
+	for item in os.listdir(path):
+		files.append(item)
+	return files
 def createOutputImageGDAL(outFilename, inDataset):
     driver = gdal.GetDriverByName( "GTiff" )
     metadata = driver.GetMetadata()

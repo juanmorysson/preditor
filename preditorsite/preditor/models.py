@@ -9,9 +9,22 @@ class Modelo(models.Model):
     responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
     data_criacao =  models.DateTimeField(null=True,blank=True)
     stack = models.CharField(max_length=200, null=True)
+    percent = models.CharField(max_length=3, null=True)
 
     def __str__(self):
         return self.descricao
+
+class TipoArquivoModelo(models.Model):
+    tag = models.CharField(max_length=50)
+    filename = models.CharField(max_length=50)
+    descricao = models.CharField(max_length=50)
+    def __str__(self):
+        return self.descricao
+class ArquivoModelo(models.Model):
+    tipo = models.ForeignKey(TipoArquivoModelo, on_delete=models.CASCADE, null=False)
+    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
+    data_treinmaneto = models.DateTimeField(null=True, blank=True)
+    data_teste = models.DateTimeField(null=True, blank=True)
 
 class ClasseModelo(models.Model):
     classe = models.CharField(max_length=200, null=False, blank=False)

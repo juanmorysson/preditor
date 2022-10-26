@@ -22,8 +22,11 @@
 
 # Ferramenta
 	# Telas:
-		# projeto_open
-			- desativar ou não exibir botão de analisar qd não tem demarcação
+	    - exibir imagem modal
+	        - exibir Legenda com Gradiente de Cores
+	        - possibilitar mudar gradiente de cores (na tela anterior???)
+	        - possibilitar ajutar os intervalos de valores para cada cor
+
 	# Demarcar área
 		- deixar botão mais vizível
 		- salvar o geojson direto no projeto
@@ -43,6 +46,12 @@
 			- gerar stack por índices
 				- outros índices
 				    - fazer tela de cadastrar indices
+				        - os publicos só o Juan altera
+				        - fazer teste nos dois tipos de satélites
+				        - criar botão publicar
+				            - enviar email para análise
+
+
 		- datum: Sirgas (Brasil)
 			- verificar se é necessário e possível usar
 
@@ -66,6 +75,9 @@
 	# progresso
 		- atualizar automáticamente a página de progressos
 		- como "matar" os progressos que foram perdidos no sistema?
+
+		- adicionar os progressos na geração de índices
+		- adicionar um progresso "PAI" ao executar função "GRANDE"
 
 
 	# Outras funcionalidades (não ligadas a projetos):

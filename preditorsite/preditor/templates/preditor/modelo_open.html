@@ -168,61 +168,113 @@
         </div>
     </div>
 	</form>
-    <div class="row">
-        <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Treinamento e Testes </h3>
-        </div>
-    	<div class="col-sm-5">
-        	<div class="card">
-            	<div class="card-body">
-            		Selecionar Modelo(s):
-            		<table class="table user-table table-hover">
-						<tbody id="body_edital">
-							{% for model in models %}
-								<tr>
-									<td>
-										{{model}} 
-									</td>
-								</tr>
-							{% endfor %}
-						</tbody>
-					</table>
+	<form method="POST" enctype="multipart/form-data">
+			                            {% csrf_token %}
+    	<div class="row">
+			<div class="col-sm-12">
+				<h3 class="card-title mb-0 p-10"> Treinamento e Testes </h3>
+			</div>
+			<div class="col-sm-5">
+				<div class="card">
+					<div class="card-body">
+						Selecionar Modelo(s):
+						<table class="table user-table table-hover">
+							<tbody id="body_edital">
+								{% for model in tipo_models %}
+									<tr>
+										<td>
+											{{model}}
+										</td>
+										<td>
+											<input type="checkbox" name="model_{{model.id}}">
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-4">
+				<div class="card">
+					<div class="card-body">
+						Confirgurações de Dados:
+						<br><br>
+						<p>
+							Percentual de Treinamento:
+						</p>
+						<div class="form-group">
+							<input type="range" name="percent" value="70" min="30" max="100" oninput="this.nextElementSibling.value = this.value">
+							<output>70</output>%
+						</div>
+						<div class="form-group">
+							<p class="alert-success">
+								{{status}}
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-3">
+				<div class="card">
+					<div class="card-body">
+						Ações:
+						<br>
+						<button type="submit" formaction="/modelo/prepararDF/{{ modelo.pk }}" class="btn btn-primary m-10">
+			             	Preparar Dados
+			        	</button>
+						<br>
+						<button type="submit" formaction="/modelo/treinar/{{ modelo.pk }}" class="btn btn-primary m-10">
+			             	Treinar
+			        	</button>
+						<br>
+						<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
+			             	Testar
+			        	</button>
+						<br>
+						<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
+			             	Treinar e Testar
+			        	</button>
+
+					</div>
 				</div>
 			</div>
 		</div>
-		<div class="col-sm-5">
-        	<div class="card">
-            	<div class="card-body">
-            		Confirgurações de Testes:
-				</div>
-			</div> 
-        </div>
-        <div class="col-sm-2">
-        	<div class="card">
-            	<div class="card-body">
-            		Ações:
-            		<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
-		        		Treinar
-		        	</a>
-		        	<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
-		        		Testar
-		        	</a>
-		        	<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary m-10">
-		        		Treinar e Testar
-		        	</a>
-				</div>
-			</div> 
-        </div>
-        <div class="col-sm-8">
+	</form>
+	<div class="row">
+        <div class="col-sm-12">
         	<div class="card">
             	<div class="card-body">
             		Resultados:
             		<table class="table user-table table-hover">
 						<tbody id="body_edital">
+								<tr>
+									<th>
+										Modelo Treinado
+									</th>
+									<th>
+										Data de Treinamento
+									</th>
+									<th>
+										Data de Teste
+									</th>
+									<th>
+										Opções
+									</th>
+								</tr>
 							{% for model in models %}
 								<tr>
 									<td>
-										{{model}} 
+										{{model.tipo.descricao}}
+									</td>
+									<td>
+										{{model.data_treinmaneto}}
+									</td>
+									<td>
+										{{model.data_teste}}
+									</td>
+									<td>
+										Download e Summary
 									</td>
 								</tr>
 							{% endfor %}
@@ -231,6 +283,8 @@
 				</div>
 			</div>
 		</div>
+	</div>
+	<div class="row">
 		<div class="col-sm-4">
         	<div class="card">
             	<div class="card-body">
