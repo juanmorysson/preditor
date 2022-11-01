@@ -130,7 +130,7 @@
 		</div>
 		<div class="col-sm-5">
         	<div class="card">
-            	<div class="card-body">
+            	<div class="card-body" style="overflow-y: scroll; height: 410px;">
             		Escolher Variáveis:
             		<table class="table user-table table-hover">
 						<tbody id="body_edital">
@@ -180,16 +180,32 @@
 						Selecionar Modelo(s):
 						<table class="table user-table table-hover">
 							<tbody id="body_edital">
-								{% for model in tipo_models %}
 									<tr>
 										<td>
-											{{model}}
+											Random Forest Classificator
+											<div class="row">
+												<div class="col-sm-4 col-4">
+
+												</div>
+												<div class="col-sm-8 col-8">
+													Galhos:
+													<input type="range" name="max_depth" style="width: 100%;" value="2" min="2" max="5" oninput="this.nextElementSibling.value = this.value">
+													<output>2</output>
+												</div>
+											</div>
 										</td>
 										<td>
-											<input type="checkbox" name="model_{{model.id}}">
+											<input type="checkbox" name="model_1">
 										</td>
 									</tr>
-								{% endfor %}
+									<tr>
+										<td>
+											Support Vector Machine
+										</td>
+										<td>
+											<input type="checkbox" name="model_2">
+										</td>
+									</tr>
 							</tbody>
 						</table>
 					</div>
@@ -203,9 +219,24 @@
 						<p>
 							Percentual de Treinamento:
 						</p>
+						{% if modelo.percent %}
 						<div class="form-group">
-							<input type="range" name="percent" value="70" min="30" max="100" oninput="this.nextElementSibling.value = this.value">
+							<input type="range" name="percent" style="width: 100%;" value="{{modelo.percent}}" min="30" max="95" oninput="this.nextElementSibling.value = this.value">
+							<output>{{modelo.percent}}</output>%
+						</div>
+						{% else %}
+						<div class="form-group">
+							<input type="range" name="percent" style="width: 100%;" value="70" min="30" max="95" oninput="this.nextElementSibling.value = this.value">
 							<output>70</output>%
+						</div>
+						{% endif %}
+						<br>
+						<p>
+							Validação Cruzada (Quantidade de loops):
+						</p>
+						<div class="form-group">
+							<input type="range" name="loop_cross" style="width: 50%;" value="3" min="2" max="6" oninput="this.nextElementSibling.value = this.value">
+							<output style="width: 100%;">3</output>
 						</div>
 						<div class="form-group">
 							<p class="alert-success">
@@ -228,14 +259,6 @@
 			             	Treinar
 			        	</button>
 						<br>
-						<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
-			             	Testar
-			        	</button>
-						<br>
-						<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
-			             	Treinar e Testar
-			        	</button>
-
 					</div>
 				</div>
 			</div>
@@ -256,25 +279,61 @@
 										Data de Treinamento
 									</th>
 									<th>
+										Validação <br>
+										Cruzada
+									</th>
+									<th>
+										Acurácia de Treinamento<br>
+										(Média | Maior | Menor)
+									</th>
+									<th>
 										Data de Teste
 									</th>
 									<th>
-										Opções
+										Acurácia de Teste
+									</th>
+									<th>
+
 									</th>
 								</tr>
 							{% for model in models %}
-								<tr>
-									<td>
+								<tr >
+									<td data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum" data-href="{{model.id}}">
 										{{model.tipo.descricao}}
+										{% if model.max_depth %}
+											<br> Galhos: {{model.max_depth}}
+										{% endif %}
 									</td>
 									<td>
-										{{model.data_treinmaneto}}
+										{{model.data_treinamento|date:'d/m/Y h:i'}}
 									</td>
 									<td>
-										{{model.data_teste}}
+										{{model.loop_cross}}
 									</td>
 									<td>
-										Download e Summary
+										{{model.acuraciaTreinoMedia}} |
+										{{model.acuraciaTreinoMaior}} |
+										{{model.acuraciaTreinoMenor}}
+									</td>
+									<td>
+										{{model.data_teste|date:'d/m/Y h:i'}}
+									</td>
+									<td>
+										{{model.acuraciaTeste}}
+									</td>
+									<td>
+										<a href="/modelo/testar/{{ model.id }}" class="btn btn-primary m-0">
+			             					Testar
+			        					</a>
+										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" data-href="{{model.id}}" >
+			             					Ver
+			        					</a>
+										<a href="/modelo/excluir_arquivo/{{ model.id }}" class="btn btn-primary m-0">
+			             					Excluir
+			        					</a>
+										<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
+	        								Download
+	        							</a>
 									</td>
 								</tr>
 							{% endfor %}
@@ -284,16 +343,51 @@
 			</div>
 		</div>
 	</div>
-	<div class="row">
-		<div class="col-sm-4">
-        	<div class="card">
-            	<div class="card-body">
-            		AIC:
-				</div>
-			</div>
-		</div>
-    </div>
 </div>
+
+
+
+			<div id="summaryModal" data-backdrop="static" class="modal fade bd-example-modal-lg2" tabindex="-1" role="dialog"  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-body">
+									Acurácia: <br>
+									Dados: <br>
+										Classes: <br>
+											Quantidade de Linhas Treinamento: <br>
+											Quantidade de Linhas Teste <br>
+											- Grafico Pizza com percentual de linha por classe <br>
+										Variáveis: <br>
+											Lista Variáveis <br>
+											Gráfico Barra Vertical de Importância por Variável <br>
+											??????????????????Antes ou depois dos testes???????????<br>
+									Download: <br>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-body" >
+                    <div class="row" >
+						<div class="col-sm-9 col-9" >
+							<h3 class="page-title mb-0 p-0" id="arq"></h3>
+							<p id="desc_arq"></p>
+						</div>
+						<div class="col-sm-3 col-3">
+                          <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
 {% endblock %}
 
 

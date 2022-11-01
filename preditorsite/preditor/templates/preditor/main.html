@@ -230,15 +230,6 @@
           <nav class="sidebar-nav ">
             <ul id="sidebarnav">
               <!-- User Profile-->
-              <li class="sidebar-item">
-                <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link"
-                  href="/"
-                  aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
-                  ><span class="hide-menu">Home</span></a
-                >
-              </li>
               {% if user.is_authenticated %}
               <li class="sidebar-item">
                 <a
@@ -285,28 +276,10 @@
               <li class="sidebar-item">
                 <a
                   class="sidebar-link waves-effect waves-dark sidebar-link"
-                  href="/cortar_page"
-                  aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
-                  ><span class="hide-menu">Cortar</span></a
-                >
-              </li>
-              <li class="sidebar-item">
-                <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/trescores_page"
                   aria-expanded="false"
                   ><i class="mdi me-2 mdi-home"></i
                   ><span class="hide-menu">tres cores</span></a
-                >
-              </li>
-              <li class="sidebar-item">
-                <a
-                  class="sidebar-link waves-effect waves-dark sidebar-link"
-                  href="/ndvi_page"
-                  aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
-                  ><span class="hide-menu">NDVI</span></a
                 >
               </li>
               <li class="sidebar-item">
@@ -340,47 +313,46 @@
         {% block content %} 
         {% endblock %}
             <div id="myModal" data-backdrop="static" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog"  aria-labelledby="myLargeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-body">
-        <div class="row">
-              <div class="col-sm-12">
-                  <div class="card">
-                      <div class="card-body">
-                          <center>
-              <div id="mapa">
-                        
-                        </div>   
-                          </center>
-                      </div> 
-                  </div>
-              </div>
-          </div>
-          </div>
-        <div class="modal-footer">
-          <div class="row">
-              <div class="col-sm-12">
-                Área: {{ area.descricao }} -
-                Projeto: {{ projeto.descricao }} <br>
-              </div> 
-              <div class="col-sm-3">
-                <h3 class="page-title mb-0 p-0" id="tipo_map"></h3>
-              </div>
-              <div class="col-sm-6">
-                
-              </div>
-              <div class="col-sm-3">
-                <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
-              </div>
-        </div>
-      </div>
-    </div>
-    </div>
-  </div> 
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <center>
+                                      <div id="mapa">
 
-<script src="{% static 'assets/plugins/jquery/dist/jquery.min.js' %}"></script>
-<script src="{% static 'js/modal_action.js' %} "></script>
-<script src="{% static 'js/sweetalert.min.js' %} "></script>
+                                      </div>
+                                    </center>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                          Área: {{ area.descricao }} -
+                          Projeto: {{ projeto.descricao }} <br>
+                        </div>
+                        <div class="col-sm-3">
+                          <h3 class="page-title mb-0 p-0" id="tipo_map"></h3>
+                        </div>
+                        <div class="col-sm-6">
+                        </div>
+                        <div class="col-sm-3">
+                          <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <script src="{% static 'assets/plugins/jquery/dist/jquery.min.js' %}"></script>
+            <script src="{% static 'js/modal_action.js' %} "></script>
+            <script src="{% static 'js/sweetalert.min.js' %} "></script>
         </div>
       </div>
 

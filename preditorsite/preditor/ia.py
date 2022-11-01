@@ -3,34 +3,62 @@ import rasterio
 from sklearn.linear_model import LinearRegression as lm
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier as rfc
+from sklearn.model_selection import KFold
 from sklearn.datasets import make_classification
-from sklearn.neural_network import MLPClassifier as rn
+from sklearn.model_selection import cross_val_score
+from sklearn.inspection import permutation_importance
 import joblib
 
-def treinar_modelo(target, y, tipo, path):
-	model_run = False
+def testar_modelo(model, X_test, Y_test):
+	result = model.score(X_test, Y_test)
+	return result
+def treinar_modelo(target, y, tipo, split_cross, max_depth):
 	model = None
 	if tipo.tag == "rf":
-		model = rfc(max_depth=2, random_state=0)
-		model.fit(target, y)
-		model_run = True
-	if tipo.tag == "rn":
-		model = rn(solver='lbfgs', alpha=1e-5,hidden_layer_sizes = (5, 2), random_state = 1)
-		model.fit(target, y)
-		model_run = True
+		model = rfc(max_depth=max_depth, random_state=0)
+		#model.fit(target, y)
+		#results = permutation_importance(model, target, y, scoring='accuracy')
+		#importance = results.importances_mean
+		#for i, v in enumerate(importance):
+		#	print('Feature: %0d, Score: %.5f' % (i, v))
 	if tipo.tag == "svm":
 		model = svm.SVC()
-		model.fit(target, y)
-		model_run = True
-	filename = tipo.filename + '.sav'
-	if model_run:
-		joblib.dump(model, path+filename)
+		#model.fit(target, y)
+	model.fit(target, y)
+	cv = KFold(n_splits=split_cross, shuffle=True)
+	results = cross_val_score(model, target, y, cv=cv)
+	mean = results.mean()
+	dv = results.std()
+	menor = "%.5f" % ((mean - 2 * dv) * 100)
+	maior = "%.5f" % ((mean + 2 * dv) * 100)
+	mean = "%.5f" % (results.mean() * 100)
+	results = permutation_importance(model, target, y, scoring='accuracy')
+	importance = results.importances_mean
+	return mean, menor, maior, model, importance
 
+def ler_modelo_arquivo(arq):
+	path = os.getcwd() +"\\arquivos\\modelos\\"+arq.modelo.pasta+"\\modelos\\"
+	model = joblib.load(open(path+arq.tipo.filename+str(arq.id) +".sav", 'rb'))
+	print(model.classes_)
+	print(model.n_features_in_)
+	#print(model)
+	if str(model)=="SVC()":
+		print("SVM")
+	if str(model)[:22] == "RandomForestClassifier":
+		print("RF")
+		#print(model.coefs_)
+	return model
+
+#testar
+	#result = loaded_model.score(X_test, Y_test)
+
+
+#### LIXO - exemplos
 def modelo_linear(x, y):
 	modelo = lm.fit(x, y)
 	return modelo
 
-def ler_modelo():
+def ler_modelo_R():
 	os.environ["R_HOME"] = r"C:/Program Files/R/R-4.1.1"
 	os.environ['R_USER'] = 'C:/Users/juan/Documents'
 	import rpy2.robjects as robjects
@@ -70,3 +98,4 @@ def empilhar():
 	src = rasterio.open('modelos/remp.tif')
 	imgRio = src.read()
 	return imgRio
+

@@ -26,11 +26,11 @@
 	        - exibir Legenda com Gradiente de Cores
 	        - possibilitar mudar gradiente de cores (na tela anterior???)
 	        - possibilitar ajutar os intervalos de valores para cada cor
-
+    # Cadastrar Fórmulas
+        - só salvar se validar
 	# Demarcar área
 		- deixar botão mais vizível
 		- salvar o geojson direto no projeto
-
 	# download de imagens
 		- automática?
 		- fazer funcionar com Level 2A
@@ -60,6 +60,10 @@
 		    - listar inidices só publicos ou de resposabilidade do usuário
 		- gerar modelos
 		    - verificar as restrições de cada modelo
+
+    # hiper parâmetros de cada modelo: estudar
+        https://topepo.github.io/caret/train-models-by-tag.html#Random_Forest
+
 
 	# Qualificar Imagem pelo modelo
 		- testar de leitura do modelo

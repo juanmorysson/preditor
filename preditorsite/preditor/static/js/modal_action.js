@@ -20,6 +20,31 @@ jQuery(document).ready(function($) {
 
 });
 
+jQuery(document).ready(function($) {
+    $(".clickable-row-sum").click(function() {
+        $.ajax({
+            type: 'GET',
+            url: '/summary_json/'+$(this).data("href"),
+            success: function (data) {
+              console.log("foi...")
+              console.log(data)
+              var element = document.getElementById("arq");
+              element.innerHTML = data['arq']
+              var element = document.getElementById("desc_arq");
+              element.innerHTML = data['desc_arq']
+              //var tipo = document.getElementById("tipo_map");
+              //tipo.innerHTML = data['tipo']
+            },
+            error: function (err) {
+                console.log("não foi...")
+                console.log(err);
+              },
+          });
+    });
+
+});
+
+
 function getMesagem(mesagem, tipo){
   const Toast = Swal.mixin({
     toast: true,
@@ -41,7 +66,6 @@ function getMesagem(mesagem, tipo){
 
 function fecharmodel(){
   edicao =true;
-  campos_edicao();
 }
 
 function mostra_oculta(){

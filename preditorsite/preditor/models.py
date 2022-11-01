@@ -23,8 +23,19 @@ class TipoArquivoModelo(models.Model):
 class ArquivoModelo(models.Model):
     tipo = models.ForeignKey(TipoArquivoModelo, on_delete=models.CASCADE, null=False)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
-    data_treinmaneto = models.DateTimeField(null=True, blank=True)
+    data_treinamento = models.DateTimeField(null=True, blank=True)
+    loop_cross = models.CharField(max_length=20, null=True)
+    max_depth = models.CharField(max_length=20, null=True)
+    acuraciaTreinoMedia = models.CharField(max_length=20, null=True)
+    acuraciaTreinoMaior = models.CharField(max_length=20, null=True)
+    acuraciaTreinoMenor = models.CharField(max_length=20, null=True)
     data_teste = models.DateTimeField(null=True, blank=True)
+    acuraciaTeste = models.CharField(max_length=20, null=True)
+
+class ImportanciaVariavel(models.Model):
+    arquivoModelo = models.ForeignKey(ArquivoModelo, on_delete=models.CASCADE, null=False)
+    variavel = models.CharField(max_length=20, null=True)
+    importancia = models.CharField(max_length=20, null=True)
 
 class ClasseModelo(models.Model):
     classe = models.CharField(max_length=200, null=False, blank=False)

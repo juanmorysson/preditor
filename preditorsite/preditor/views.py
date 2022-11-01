@@ -10,9 +10,11 @@ from django.http import HttpResponse,JsonResponse
 from django.core.files.storage import default_storage
 import zipfile
 import glob
+import joblib
 from . import calc, utils, progress, ia
 from area import area as c_area
 import csv
+from sklearn.model_selection import train_test_split
 
 #import ee
 from shapely.geometry import Polygon
@@ -44,18 +46,20 @@ from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 
 ##########   PAGES   ##############
 def index(request):
+	return render(request, 'preditor/index.html', {})
+def mapa_cerrado(request):
 	#ia.ler_modelo()
-	caldas_novas = f"media/cn.geojson"
+	cerrado = f"media/cerrado.geojson"
 	m = folium.Map(
-		location=[-17.7494, -48.6202],
+		location=[-14.7494, -48.6202],
 		tiles="cartodbpositron",
-		zoom_start=10,
+		zoom_start=5,
 	)
-	folium.GeoJson(caldas_novas, name="CN").add_to(m)
+	folium.GeoJson(cerrado, name="Cerrado").add_to(m)
 	folium.LayerControl().add_to(m)
 	m=m._repr_html_()
 
-	return render(request, 'preditor/index.html', {'my_map': m})
+	return render(request, 'preditor/mapa_cerrado.html', {'my_map': m})
 def modelos(request):
     #if not request.user.has_perm('aSocial.list_setor'):
     #    raise PermissionDenied
@@ -106,6 +110,15 @@ def modelo_open(request, pk):
 		status = "Dados Preparados para: Treinos ("+modelo.percent+"%)  e Testes ("+str(100-int(modelo.percent))+"%)"
 	return render(request, 'preditor/modelo_open.html', {'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
 
+def excluir_arquivo(request, pk):
+	arq = ArquivoModelo.objects.get(pk=pk)
+	modelo = arq.modelo
+	filename = arq.tipo.filename + str(arq.id) + '.sav'
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	os.remove(path_model + filename)
+	arq.delete()
+	return redirect('modelo_open', pk=modelo.pk)
+
 def gerar_stacks_modelo (request, pk):
 	stack = ""
 	vars = []
@@ -128,6 +141,8 @@ def gerar_stacks_modelo (request, pk):
 			rm.save()
 			vars.append(idRaster)
 			rasters.append(r)
+	if stack=="":
+		return redirect('modelo_open', pk)
 	cortarModelo(pk, stack, rasters)
 	return redirect('modelo_open', pk=pk)
 
@@ -148,6 +163,8 @@ def prepararDataFrameModelo(pk, percent):
 
 	target = pd.DataFrame()
 	y = pd.Series()
+	target_test = pd.DataFrame()
+	y_test = pd.Series()
 	for area in areas:
 		dfArea = pd.DataFrame()
 		id = str(area.pk)
@@ -160,7 +177,6 @@ def prepararDataFrameModelo(pk, percent):
 				if r.formula is None:
 					path = path + '\\'
 					nome = nome.lower()
-					print(r.tag)
 				else:
 					path = path + '\\' + modelo.stack + '\\indices\\'
 			else:
@@ -174,9 +190,13 @@ def prepararDataFrameModelo(pk, percent):
 			vv = pd.Series(val)
 			dfArea[r.tag] = vv
 		dfArea = dfArea.dropna()
-		target = pd.concat([target, dfArea])
-		yArea = pd.Series([area.classe.classe] * len(dfArea.index))
-		y = pd.concat([y, yArea])
+		train, test = train_test_split(dfArea, test_size=float(100-int(percent))/100)
+		target = pd.concat([target, train])
+		target_test = pd.concat([target_test, test])
+		yArea_train = pd.Series([area.classe.classe] * len(train.index))
+		yArea_test = pd.Series([area.classe.classe] * len(test.index))
+		y = pd.concat([y, yArea_train])
+		y_test = pd.concat([y_test, yArea_test])
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
 	#target.reset_index(inplace=True)
 	print("Gerando arquivo target")
@@ -185,21 +205,26 @@ def prepararDataFrameModelo(pk, percent):
 	for item in target.columns:
 		head = head + delimiter + item
 	head = head[len(delimiter):]
-	print(head)
-	np.savetxt(r''+path_model+"target_train.txt", target.values, fmt='%d', delimiter=delimiter, header=head)
+	np.savetxt(r''+path_model+"target_train.txt", target.values, fmt='%4f', delimiter=delimiter, header=head)
+	print("Gerando arquivo target test")
+	np.savetxt(r'' + path_model + "target_test.txt", target_test.values, fmt='%4f', delimiter=delimiter, header=head)
 	print("Gerando arquivo y")
 	np.savetxt(r''+path_model+"y_train.txt", y.values, fmt='%s')
+	print("Gerando arquivo y_test")
+	np.savetxt(r'' + path_model + "y_test.txt", y_test.values, fmt='%s')
 	modelo.percent = str(percent)
 	modelo.save()
 
 def treinar_Request(request, pk):
 	percent = request.POST['percent']
+	loop_cross = int(request.POST['loop_cross'])
+	max_depth = int(request.POST['max_depth'])
 	for k, v in request.POST.lists():
 		if k.startswith('model_'):
 			id = k[6:]
-			treinar(percent,pk, int(id))
+			treinar(percent,pk, int(id), loop_cross, max_depth)
 	return redirect('modelo_open', pk=pk)
-def treinar(percent, pk, pk_me):
+def treinar(percent, pk, pk_me, loop_cross, max_depth):
 	modelo = Modelo.objects.get(pk=pk)
 	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
 	target_ok = False
@@ -219,10 +244,8 @@ def treinar(percent, pk, pk_me):
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
 	print("Lendo target")
 	target = np.loadtxt(r''+path_model+"target_train.txt", delimiter=";")
-	print(target.shape)
 	print("Lendo y")
 	y = np.loadtxt(r''+path_model+"y_train.txt", dtype='str', delimiter="&&")
-	print(y.shape)
 	#Treinar Modelo
 	print("Treinando modelo" + str(pk_me))
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
@@ -231,18 +254,53 @@ def treinar(percent, pk, pk_me):
 	else:
 		os.mkdir(path_model)
 	tipo = TipoArquivoModelo.objects.get(pk=pk_me)
-	ia.treinar_modelo(target, y, tipo, path_model)
+	mean, menor, maior, model, importance = ia.treinar_modelo(target, y, tipo, loop_cross, max_depth)
+	rms = Raster_Modelo.objects.filter(modelo=modelo)
 	#salvar treinamento
-	arq_modelo = None
-	try:
-		arq_modelo = ArquivoModelo.objects.get(modelo=modelo, tipo=tipo)
-	except ArquivoModelo.DoesNotExist:
-		arq_modelo = ArquivoModelo()
+	arq_modelo = ArquivoModelo()
 	arq_modelo.tipo = tipo
 	arq_modelo.modelo = modelo
-	arq_modelo.data_treinmaneto = timezone.now()
+	arq_modelo.loop_cross = loop_cross
+	arq_modelo.data_treinamento = timezone.now()
+	arq_modelo.acuraciaTreinoMedia = mean
+	arq_modelo.acuraciaTreinoMenor = menor
+	arq_modelo.acuraciaTreinoMaior = maior
+	if tipo.tag == "rf":
+		arq_modelo.max_depth = max_depth
 	arq_modelo.data_teste = None
+	arq_modelo.acuraciaTeste = None
 	arq_modelo.save()
+	print("Salvando Importancias")
+	list = []
+	for rm in rms:
+		list.append(rm.raster.tag)
+	for i, v in enumerate(importance):
+		imp = ImportanciaVariavel()
+		imp.arquivoModelo = arq_modelo
+		imp.variavel = list[i]
+		imp.importancia = v
+		imp.save()
+	filename = tipo.filename + str(arq_modelo.id) + '.sav'
+	joblib.dump(model, path_model + filename)
+
+def testar(request, pk):
+	arq_modelo = ArquivoModelo.objects.get(pk=pk)
+	modelo = arq_modelo.modelo
+	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	tipo = arq_modelo.tipo
+	model = ia.ler_modelo_arquivo(arq_modelo)
+	# ler arquivos
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	print("Lendo target")
+	target_test = np.loadtxt(r'' + path_model + "target_test.txt", delimiter=";")
+	print("Lendo y")
+	y_test = np.loadtxt(r'' + path_model + "y_test.txt", dtype='str', delimiter="&&")
+	result = ia.testar_modelo(model, target_test, y_test)
+	#salvar teste
+	arq_modelo.data_teste = timezone.now()
+	arq_modelo.acuraciaTeste = "%.5f" % (result * 100)
+	arq_modelo.save()
+	return redirect('modelo_open', pk=modelo.pk)
 
 def ver_stacks_modelo (request, pk):
 	modelo = Modelo.objects.get(pk=pk)
@@ -441,9 +499,9 @@ def projeto_open(request, pk):
     			arquivo.tipo = file[-9]
     			if (file[-8:] ==".geojson"):
     				shapes.append(arquivo)
-    request.session['projeto_pk'] = pk
-    request.session['projeto_desc'] = projeto.descricao
-    request.session.modified = True
+    #request.session['projeto_pk'] = pk
+    #request.session['projeto_desc'] = projeto.descricao
+    #request.session.modified = True
     return render(request, 'preditor/projeto_open.html', {'projeto':projeto, 'areas':areas, 'shapes':shapes, 'error':error})
 
 def area_open(request, pk):
@@ -479,7 +537,7 @@ def area_open(request, pk):
 def stack(request, pk, stack):
     #if not request.user.has_perm('aSocial.delete_setor'):
     #    raise PermissionDenied
-    request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
     area = Area.objects.get(pk=pk)
     projeto = Projeto.objects.get(pk=area.projeto.pk)
     r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
@@ -537,10 +595,10 @@ def projeto_new(request):
         form = ProjetoForm()
     return render(request, 'preditor/projeto_edit.html', {'form': form})
 
-def area_new(request):
+def area_new(request, pk):
     #if not request.user.has_perm('aSocial.add_setor'):
     #    raise PermissionDenied
-    projeto = get_object_or_404(Projeto, pk=request.session.get('projeto_pk'))
+    projeto = get_object_or_404(Projeto, pk=pk)
     if request.method == "POST":
         form = AreaForm(request.POST)
         if form.is_valid():
@@ -560,29 +618,28 @@ def area_new(request):
     return render(request, 'preditor/area_edit.html', {'form': form, 'projeto': projeto})
 
 def draw(request):
-	projeto = get_object_or_404(Projeto, pk=request.session.get('projeto_pk'))
 	m = folium.Map(
-		location=[-17.7494, -48.6202],
+		location=[-14.7494, -48.6202],
 		tiles="cartodbpositron",
-		zoom_start=10,
+		zoom_start=6,
 	)
 	draw = Draw(
-		export=True, 
+		export=True,
 		draw_options={'polygon':{'showArea':True}}, 
 		edit_options= {
 			'selectedPathOptions':{
 				'maintainColor': True,
 				'opacity': 0.3}
 				},
-		filename='projetos'+projeto.pasta+'shape.geojson')
+		filename='desenho.geojson')
 	draw.add_to(m)
 	m=m._repr_html_()
 
 	return render(request, 'preditor/draw.html', {'my_map': m})
 
 def download_page(request):
-	files = glob.glob(os.getcwd()+'/repositorio/sentinel/*/GRANULE/*/IMG_DATA/*.jp2')
-	return render(request, 'preditor/download_page.html', {'files':files})
+	repos = utils.list_repositorios()
+	return render(request, 'preditor/download_page.html', {'repos':repos})
 
 def trescores_page(request):
 	return render(request, 'preditor/trescores_page.html', {})
@@ -594,12 +651,6 @@ def progressos(request):
 def ndvi_page(request):
 	request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
 	return render(request, 'preditor/ndvi_page.html', {})
-
-def cortar_page(request):
-	projeto = get_object_or_404(Projeto, pk=request.session.get('projeto_pk'))
-	rasters = glob.glob(os.getcwd()+'/repositorio/sentinel/*/GRANULE/*/IMG_DATA/*.jp2')
-	masks = glob.glob(os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\*.geojson')
-	return render(request, 'preditor/cortar.html', {'rasters':rasters, 'masks':masks})
 
 def user(request):
     return render(request, 'aSocial/user.html', {})
@@ -1131,7 +1182,10 @@ def gerar_indices_area(request, pk, stack):
 		if k.startswith('ind_'):
 			ipk = k[4:len(k)]
 			r = Raster.objects.get(pk=int(ipk))
-			src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+			try:
+				src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+			except:
+				return redirect('stack', pk, stack)
 			raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
 			calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
 
@@ -1150,7 +1204,10 @@ def gerar_indice_area(request, pk, stack, pk_indice):
 	for s in sats:
 		sat = s
 	r = Raster.objects.get(pk=pk_indice)
-	src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+	try:
+		src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+	except:
+		return redirect('stack', pk, stack)
 	raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
 	calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
 
@@ -1309,3 +1366,9 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 
 	return JsonResponse({'my_map_modal': m, 'tipo':tipo})
 
+def summary_json(request, pk):
+	print("DDDDDDDDDDDD")
+	arq = ArquivoModelo.objects.get(pk=pk)
+	desc_arq = "Modelo: "+arq.modelo.descricao +" <br> Data de Treinamento: "+ str(arq.data_treinamento)
+	model = ia.ler_modelo_arquivo(arq)
+	return JsonResponse({'arq': arq.tipo.descricao, 'desc_arq': desc_arq})

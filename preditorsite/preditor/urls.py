@@ -4,6 +4,7 @@ from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
     path('', views.index, name="index"),
+    path('mapa_cerrado', views.mapa_cerrado, name="mapa_cerrado"),
     path('user', views.user, name='user'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('allauth.urls')),
@@ -24,6 +25,9 @@ urlpatterns = [
     path('modelo/<int:pk>/edit/', views.modelo_edit, name='modelo_edit'),
     path('modelo/prepararDF/<int:pk>', views.prepararDataFrameModelo_Request, name='prepararDataFrameModelo_Request'),
     path('modelo/treinar/<int:pk>', views.treinar_Request, name='treinar_Request'),
+    path('modelo/testar/<int:pk>', views.testar, name='testar'),
+    path('modelo/excluir_arquivo/<int:pk>', views.excluir_arquivo, name='excluir_arquivo'),
+
 
     path('classe_modelo/new/<int:pk>/', views.classe_modelo_new, name='classe_modelo_new'),
     path('classe_modelo/<int:pk>/', views.classe_modelo_edit, name='classe_modelo_edit'),
@@ -36,7 +40,7 @@ urlpatterns = [
     path('projetos', views.projetos, name="projetos"),
     path('projeto/<int:pk>/', views.projeto_open, name='projeto_open'),
     path('projeto/new', views.projeto_new, name='projeto_new'),
-    path('area/new', views.area_new, name='area_new'),
+    path('area/new/<int:pk>', views.area_new, name='area_new'),
     path('area/<int:pk>/', views.area_open, name="area_open"),
     path('area/uploadMask/<int:pk>/', views.uploadMask, name="uploadMask"),
     path('area/uploadPoints/<int:pk>/', views.uploadPoints, name="uploadPoints"),
@@ -54,12 +58,10 @@ urlpatterns = [
     path('trescores_page', views.trescores_page, name="trescores_page"),
     path('ndvi', views.ndvi, name="ndvi"),
     path('ndvi/<int:pk>/<stack>', views.ndvi, name="ndvi"),
-    #path('ndviee', views.ndviee, name="ndviee"),
-    path('ndvi_page', views.ndvi_page, name="ndvi_page"),
     path('histograma', views.histograma, name="histograma"),
-    path('cortar_page', views.cortar_page, name="cortar_page"),
     path('cortar', views.cortar, name="cortar"),
     path('cortar/<int:pk>/<stack>', views.cortar, name="cortar"),
 
     path('mapa_json/<pk>/<stack>/<tipo>/<menu>', views.mapa_json, name='mapa_json' ),
+    path('summary_json/<pk>', views.summary_json, name='summary_json' ),
 ]
