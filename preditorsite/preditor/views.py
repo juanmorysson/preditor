@@ -1,9 +1,10 @@
 import pandas as pd
 from django.shortcuts import render, get_object_or_404
+from django.core import serializers
 from django.utils import timezone
 from .class_utils import *
 from .models import *
-from .forms import ProjetoForm, AreaForm, ModeloForm, ClasseModeloForm, AreaModeloForm
+from .forms import *
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from django.http import HttpResponse,JsonResponse
@@ -65,6 +66,130 @@ def modelos(request):
     #    raise PermissionDenied
     modelos = Modelo.objects.all()
     return render(request, 'preditor/modelos.html', {'modelos': modelos })
+
+def indices(request):
+    #if not request.user.has_perm('aSocial.list_setor'):
+    #    raise PermissionDenied
+    indices_publicos = Raster.objects.filter(publica=True, isIndex=True, formula__isnull=False)
+    meus_indices = Raster.objects.filter(publica=False, isIndex=True, responsavel=request.user)
+    return render(request, 'preditor/indices.html', {'indices_publicos': indices_publicos,  'meus_indices':meus_indices})
+def indice_new(request):
+    #if not request.user.has_perm('aSocial.add_setor'):
+    #    raise PermissionDenied
+    erro = ""
+    if request.method == "POST":
+        form = IndiceForm(request.POST)
+        if form.is_valid():
+            i = form.save(commit=False)
+            i.responsavel = request.user
+            i.isIndex = True
+            x = erroFormula(i.formula)
+            if x==False:
+            	if testeFormula(i.formula, i.tag):
+            		i.save()
+            		return redirect('indices')
+            	else:
+            		erro="A fórmula não executou"
+            else:
+            	erro = x
+
+    else:
+        form = IndiceForm()
+    rasters = RasterBand.objects.all()
+    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro':erro})
+
+def indice_edit(request, pk):
+    #if not request.user.has_perm('aSocial.add_setor'):
+    #    raise PermissionDenied
+    i = Raster.objects.get(pk=pk)
+    erro = ""
+    if request.method == "POST":
+        form = IndiceForm(request.POST, instance=i)
+        if form.is_valid():
+            i = form.save(commit=False)
+            x = erroFormula(i.formula)
+            if x == False:
+            	if testeFormula(i.formula, i.tag):
+            		i.save()
+            		return redirect('indices')
+            	else:
+            		erro="A fórmula não executou"
+            else:
+            	erro = x
+    else:
+        form = IndiceForm(instance=i)
+    rasters = RasterBand.objects.all()
+    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro': erro})
+
+def indice_testarFormula(request, pk=0):
+    #if not request.user.has_perm('aSocial.add_setor'):
+    #    raise PermissionDenied
+    erro = ""
+    sucesso = ""
+    action = 'new'
+    if pk!=0:
+    	i = Raster.objects.get(pk=pk)
+    	action = 'edit'
+    if request.method == "POST":
+    	form = IndiceForm(request.POST)
+    	if pk != 0:
+    		form = IndiceForm(request.POST, instance=i)
+    	if form.is_valid():
+    		i = form.save(commit=False)
+    		x = erroFormula(i.formula)
+    		if x == False:
+        		if testeFormula(i.formula, i.tag):
+        			sucesso = "Fómula validada!"
+        		else:
+        			erro = "A fórmula não executou"
+    		else:
+        		erro = x
+    else:
+        form = IndiceForm(instance=i)
+    rasters = RasterBand.objects.all()
+    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
+def testeFormula(formula, tag):
+	level = "1C"
+	path = os.getcwd() + '\\arquivos\\testes\\'+level
+	src_ref = rasterio.open(path + '\\cortes\\B04.tif')
+	s = "Sentinel" + level
+	sats = Satelite.objects.filter(descricao=s)
+	sat = None
+	for s in sats:
+		sat = s
+	try:
+		raster = calc.indice_calc_formula(src_ref, sat, formula, path)
+	except:
+		print("Erro na fórmula")
+		return False
+	calc.indice_write_tif(raster, src_ref, path +'\\', tag)
+	return True
+def erroFormula(formula):
+	lbs = RasterBand.objects.all()
+	list_bands = []
+	for lb in lbs:
+		list_bands.append(lb.tagOnSat)
+	list = formula.split()
+	list_r = []
+	erro = False
+	for char in list:
+		if len(char) > 1:
+			if list_r.__contains__(char):
+				continue
+			else:
+				if char in list_bands:
+					print(char + " ok")
+				else:
+					print("Banda não reconhecida: "+char)
+					erro = "Banda não reconhecida: "+char
+				list_r.append(char)
+		else:
+			if char in ['(',')','+','-','*','/']:
+				print(char + " ok")
+			else:
+				print("Erro no operador: " +char)
+				erro = "Erro no operador: " +char
+	return erro
 
 def modelo_open(request, pk):
     #if not request.user.has_perm('aSocial.delete_setor'):
@@ -217,14 +342,13 @@ def prepararDataFrameModelo(pk, percent):
 
 def treinar_Request(request, pk):
 	percent = request.POST['percent']
-	loop_cross = int(request.POST['loop_cross'])
 	max_depth = int(request.POST['max_depth'])
 	for k, v in request.POST.lists():
 		if k.startswith('model_'):
 			id = k[6:]
-			treinar(percent,pk, int(id), loop_cross, max_depth)
+			treinar(percent,pk, int(id), max_depth)
 	return redirect('modelo_open', pk=pk)
-def treinar(percent, pk, pk_me, loop_cross, max_depth):
+def treinar(percent, pk, pk_me, max_depth):
 	modelo = Modelo.objects.get(pk=pk)
 	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
 	target_ok = False
@@ -254,21 +378,16 @@ def treinar(percent, pk, pk_me, loop_cross, max_depth):
 	else:
 		os.mkdir(path_model)
 	tipo = TipoArquivoModelo.objects.get(pk=pk_me)
-	mean, menor, maior, model, importance = ia.treinar_modelo(target, y, tipo, loop_cross, max_depth)
+	model, importance = ia.treinar_modelo(target, y, tipo, max_depth)
 	rms = Raster_Modelo.objects.filter(modelo=modelo)
+	print("Salvando arquivo")
 	#salvar treinamento
 	arq_modelo = ArquivoModelo()
 	arq_modelo.tipo = tipo
 	arq_modelo.modelo = modelo
-	arq_modelo.loop_cross = loop_cross
 	arq_modelo.data_treinamento = timezone.now()
-	arq_modelo.acuraciaTreinoMedia = mean
-	arq_modelo.acuraciaTreinoMenor = menor
-	arq_modelo.acuraciaTreinoMaior = maior
 	if tipo.tag == "rf":
 		arq_modelo.max_depth = max_depth
-	arq_modelo.data_teste = None
-	arq_modelo.acuraciaTeste = None
 	arq_modelo.save()
 	print("Salvando Importancias")
 	list = []
@@ -283,6 +402,27 @@ def treinar(percent, pk, pk_me, loop_cross, max_depth):
 	filename = tipo.filename + str(arq_modelo.id) + '.sav'
 	joblib.dump(model, path_model + filename)
 
+def validar(request, pk):
+	loop_cross = int(request.POST['loop_cross'])
+	arq_modelo = ArquivoModelo.objects.get(pk=pk)
+	modelo = arq_modelo.modelo
+	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	tipo = arq_modelo.tipo
+	model = ia.ler_modelo_arquivo(arq_modelo)
+	# ler arquivos
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	print("Lendo target")
+	target = np.loadtxt(r'' + path_model + "target_train.txt", delimiter=";")
+	print("Lendo y")
+	y = np.loadtxt(r'' + path_model + "y_train.txt", dtype='str', delimiter="&&")
+	mean, menor, maior = ia.validar_modelo(model, target, y, loop_cross)
+	#salvar teste
+	arq_modelo.loop_cross = loop_cross
+	arq_modelo.acuraciaTreinoMedia = mean
+	arq_modelo.acuraciaTreinoMenor = menor
+	arq_modelo.acuraciaTreinoMaior = maior
+	arq_modelo.save()
+	return redirect('modelo_open', pk=modelo.pk)
 def testar(request, pk):
 	arq_modelo = ArquivoModelo.objects.get(pk=pk)
 	modelo = arq_modelo.modelo
@@ -1366,9 +1506,97 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 
 	return JsonResponse({'my_map_modal': m, 'tipo':tipo})
 
+def mapateste_json(request, tag):
+    #if not request.user.has_perm('aSocial.list_curso'):
+        #raise PermissionDenied
+    #### abrindo imagem
+	erro = ""
+	path = os.getcwd() + '\\arquivos\\testes\\1C\\'
+	try:
+		src = rasterio.open(path+tag+'.tif')
+	except:
+		erro = "A fórmula precisa ser testada primeiro!"
+		return JsonResponse({'erro': erro})
+	src_saida = src.read()
+	location = utils.convertToWGS84(src)
+	print("Visualização no folium...")
+	m = folium.Map(
+		location=[location[2], location[1]],
+		tiles='Stamen Terrain',
+		#tiles="cartodbpositron",
+		zoom_start=15
+	)
+	min_n = src_saida.min()
+	utils.exportRGBA(path, tag, min_n, src_saida.max())
+	#add imagem do disco
+	merc = os.path.join(path, tag+".png")
+	if not os.path.isfile(merc):
+		print(f"Could not find {merc}")
+	else:
+		imgR = folium.raster_layers.ImageOverlay(
+			name=tag,
+			image=merc,
+			bounds=location[0],
+			opacity=1,
+		)
+		#folium.Popup("I am an image").add_to(imgR)
+		imgR.add_to(m)
+		folium.LayerControl().add_to(m)
+	m=m._repr_html_()
+
+	return JsonResponse({'my_map_modal': m, 'erro':erro})
 def summary_json(request, pk):
 	print("DDDDDDDDDDDD")
 	arq = ArquivoModelo.objects.get(pk=pk)
 	desc_arq = "Modelo: "+arq.modelo.descricao +" <br> Data de Treinamento: "+ str(arq.data_treinamento)
-	model = ia.ler_modelo_arquivo(arq)
-	return JsonResponse({'arq': arq.tipo.descricao, 'desc_arq': desc_arq})
+	imps = ImportanciaVariavel.objects.filter(arquivoModelo=arq)
+	list = []
+	list_imp = []
+	for imp in imps:
+		list_imp.append(imp.importancia)
+		list.append(imp.variavel)
+	return JsonResponse({'arq': arq.tipo.descricao, 'desc_arq': desc_arq, 'imp':list_imp, 'vars': list})
+
+def dados_json(request, pk):
+	modelo = Modelo.objects.get(pk=pk)
+	desc_modelo = "Data Criação: "+str(modelo.data_criacao)
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	target = np.loadtxt(r'' + path_model + "target_train.txt", delimiter=";")
+	y = np.loadtxt(r'' + path_model + "y_train.txt", dtype='str', delimiter="&&")
+	pie_y = pd.Series(y).value_counts()
+	pie_y_class = []
+	pie_y_data = []
+	for p in pie_y:
+		pie_y_data.append(p)
+	rows = pie_y.index.values
+	for p in rows:
+		pie_y_class.append(p)
+	y_test = np.loadtxt(r'' + path_model + "y_test.txt", dtype='str', delimiter="&&")
+	pie_test = pd.Series(y_test).value_counts()
+	pie_test_class = []
+	pie_test_data = []
+	for p in pie_test:
+		pie_test_data.append(p)
+	rows = pie_test.index.values
+	for p in rows:
+		pie_test_class.append(p)
+
+	y_total = pd.concat([pd.Series(y), pd.Series(y_test)])
+	pie_total = y_total.value_counts()
+	pie_total_class = []
+	pie_total_data = []
+	for p in pie_total:
+		pie_total_data.append(p)
+	rows = pie_total.index.values
+	for p in rows:
+		pie_total_class.append(p)
+	return JsonResponse({'modelo': modelo.descricao,
+						 'desc_modelo': desc_modelo,
+						 'pie_total_class':pie_total_class,
+						 'pie_total_data':pie_total_data,
+						 'pie_test_class':pie_test_class,
+						 'pie_test_data':pie_test_data,
+						 'pie_y_class':pie_y_class,
+						 'pie_y_data':pie_y_data
+						}
+	)

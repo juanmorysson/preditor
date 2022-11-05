@@ -12,19 +12,9 @@ import joblib
 def testar_modelo(model, X_test, Y_test):
 	result = model.score(X_test, Y_test)
 	return result
-def treinar_modelo(target, y, tipo, split_cross, max_depth):
-	model = None
-	if tipo.tag == "rf":
-		model = rfc(max_depth=max_depth, random_state=0)
-		#model.fit(target, y)
-		#results = permutation_importance(model, target, y, scoring='accuracy')
-		#importance = results.importances_mean
-		#for i, v in enumerate(importance):
-		#	print('Feature: %0d, Score: %.5f' % (i, v))
-	if tipo.tag == "svm":
-		model = svm.SVC()
-		#model.fit(target, y)
-	model.fit(target, y)
+
+def validar_modelo(model, target, y, split_cross):
+	print("Verificando results")
 	cv = KFold(n_splits=split_cross, shuffle=True)
 	results = cross_val_score(model, target, y, cv=cv)
 	mean = results.mean()
@@ -32,9 +22,30 @@ def treinar_modelo(target, y, tipo, split_cross, max_depth):
 	menor = "%.5f" % ((mean - 2 * dv) * 100)
 	maior = "%.5f" % ((mean + 2 * dv) * 100)
 	mean = "%.5f" % (results.mean() * 100)
-	results = permutation_importance(model, target, y, scoring='accuracy')
-	importance = results.importances_mean
-	return mean, menor, maior, model, importance
+	return mean, menor, maior
+def treinar_modelo(target, y, tipo, max_depth):
+	model = None
+	importance = None
+	if tipo.tag == "rf":
+		model = rfc(max_depth=max_depth, random_state=0)
+		model.fit(target, y)
+		print("Verificando importâncias")
+		results = permutation_importance(model, target, y, scoring='accuracy')
+		importance = results.importances_mean
+		#results = permutation_importance(model, target, y, scoring='accuracy')
+		#importance = results.importances_mean
+		#for i, v in enumerate(importance):
+		#	print('Feature: %0d, Score: %.5f' % (i, v))
+	if tipo.tag == "svm":
+		model = svm.SVC()
+		model.fit(target, y)
+		print("Verificando importâncias")
+		if model.kernel == "rbf":
+			importance = permutation_importance(model, target, y)
+		if model.kernel == "linear":
+			importance = model.coef_
+
+	return model, importance
 
 def ler_modelo_arquivo(arq):
 	path = os.getcwd() +"\\arquivos\\modelos\\"+arq.modelo.pasta+"\\modelos\\"

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Projeto, Area, Modelo, AreaModelo, ClasseModelo
+from .models import Projeto, Area, Modelo, AreaModelo, ClasseModelo, Raster
 import datetime
 
 class ModeloForm(forms.ModelForm):
@@ -11,6 +11,18 @@ class ModeloForm(forms.ModelForm):
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'pasta': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class IndiceForm(forms.ModelForm):
+
+    class Meta:
+        model = Raster
+        fields = ( 'tag','formula', )
+        labels = {'tag': 'Índice', }
+
+        widgets = {
+            'tag': forms.TextInput(attrs={'class': 'form-control'}),
+            'formula': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class ClasseModeloForm(forms.ModelForm):

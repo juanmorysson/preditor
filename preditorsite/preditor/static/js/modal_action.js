@@ -21,7 +21,139 @@ jQuery(document).ready(function($) {
 });
 
 jQuery(document).ready(function($) {
+    $(".clickable-testeindice").click(function() {
+        $.ajax({
+            type: 'GET',
+            url: '/mapateste_json/'+$(this).data("href"),
+            success: function (data) {
+              console.log("foi...")
+              console.log(data)
+              var element = document.getElementById("mapa");
+              element.innerHTML = data['my_map_modal']
+              var tipo = document.getElementById("erro");
+              tipo.innerHTML = data['erro']
+            },
+            error: function (err) {
+                console.log("não foi...")
+                console.log(err);
+              },
+          });
+    });
+
+});
+
+jQuery(document).ready(function($) {
+    $(".clickable-row-dados").click(function() {
+    var $pieChart = $("#pie-chart");
+    var $pieTestChart = $("#pietest-chart");
+    var $pieTrainChart = $("#pietrain-chart");
+        $.ajax({
+            type: 'GET',
+            url: '/dados_json/'+$(this).data("href"),
+            success: function (data) {
+              console.log("foi...")
+              console.log(data)
+              var element = document.getElementById("modelo");
+              element.innerHTML = data['modelo']
+              var element = document.getElementById("desc_modelo");
+              element.innerHTML = data['desc_modelo']
+
+              //chart
+              var ctx = $pieChart[0].getContext("2d");
+                var myChart = new Chart(ctx, {
+                  type: "pie",
+                  data: {
+                    labels: data.pie_total_class,
+                    datasets: [
+                      {
+                        label: "Vars",
+                        data: data.pie_total_data,
+                        backgroundColor: [
+                        '#00FF00', '#DAA520', '#F4A460', '#7B68EE', '#FF00FF', '#800000', '#FF0000', '#FFFF00'
+                        ],
+                      }
+                    ],
+                  },
+                  options: {
+                      responsive: true,
+                      legend: {
+                        position: 'top',
+                      },
+                      title: {
+                        display: true,
+                        text: 'Total de dados'
+                      }
+                  }
+                });
+
+                //chart
+              var ctx = $pieTestChart[0].getContext("2d");
+                var myChartTest = new Chart(ctx, {
+                  type: "pie",
+                  data: {
+                    labels: data.pie_test_class,
+                    datasets: [
+                      {
+                        label: "Vars",
+                        data: data.pie_test_data,
+                        backgroundColor: [
+                        '#00FF00', '#DAA520', '#F4A460', '#7B68EE', '#FF00FF', '#800000', '#FF0000', '#FFFF00'
+                        ],
+                      }
+                    ],
+                  },
+                  options: {
+                      responsive: true,
+                      legend: {
+                        position: 'top',
+                      },
+                      title: {
+                        display: true,
+                        text: 'Dados de Testes'
+                      }
+                  }
+                });
+
+                 //chart
+              var ctx = $pieTrainChart[0].getContext("2d");
+                var myChartTest = new Chart(ctx, {
+                  type: "pie",
+                  data: {
+                    labels: data.pie_y_class,
+                    datasets: [
+                      {
+                        label: "Vars",
+                        data: data.pie_y_data,
+                        backgroundColor: [
+                        '#00FF00', '#DAA520', '#F4A460', '#7B68EE', '#FF00FF', '#800000', '#FF0000', '#FFFF00'
+                        ],
+                      }
+                    ],
+                  },
+                  options: {
+                      responsive: true,
+                      legend: {
+                        position: 'top',
+                      },
+                      title: {
+                        display: true,
+                        text: 'Dados de Treinamento'
+                      }
+                  }
+                });
+            },
+            error: function (err) {
+                console.log("não foi...")
+                console.log(err);
+              },
+          });
+    });
+
+});
+
+jQuery(document).ready(function($) {
     $(".clickable-row-sum").click(function() {
+        var $barChart = $("#bar-chart");
         $.ajax({
             type: 'GET',
             url: '/summary_json/'+$(this).data("href"),
@@ -32,6 +164,32 @@ jQuery(document).ready(function($) {
               element.innerHTML = data['arq']
               var element = document.getElementById("desc_arq");
               element.innerHTML = data['desc_arq']
+
+              //chart
+              var ctx = $barChart[0].getContext("2d");
+                var myChart = new Chart(ctx, {
+                  type: "horizontalBar",
+                  data: {
+                    labels: data.vars,
+                    datasets: [
+                      {
+                        label: "Vars",
+                        data: data.imp,
+                        backgroundColor: "rgba(116,96,238,0.6)",
+                      }
+                    ],
+                  },
+                  options: {
+                      responsive: true,
+                      legend: {
+                        position: 'top',
+                      },
+                      title: {
+                        display: true,
+                        text: 'Importância das Variáveis'
+                      }
+                  }
+                });
               //var tipo = document.getElementById("tipo_map");
               //tipo.innerHTML = data['tipo']
             },

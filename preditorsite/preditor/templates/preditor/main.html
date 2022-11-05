@@ -249,6 +249,15 @@
                   ><span class="hide-menu">Projetos</span></a
                 >
               </li>
+              <li class="sidebar-item">
+                <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="/indices"
+                  aria-expanded="false"
+                  ><i class="mdi me-2 mdi-home"></i
+                  ><span class="hide-menu">Índices</span></a
+                >
+              </li>
               {% if request.session.projeto_pk %}
               <li class="sidebar-item">
                 <a href="/projeto/{{ request.session.projeto_pk }}/">{{ request.session.projeto_desc }}</a> - <a href="/clear_projeto_sessao"> Clear </a>

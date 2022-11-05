@@ -17,6 +17,12 @@ urlpatterns = [
     path('draw2', views.draw, name="draw"),
     path('clear_projeto_sessao', views.clear_projeto_sessao, name="clear_projeto_sessao"),
 
+    path('indices', views.indices, name="indices"),
+    path('indice/<int:pk>/edit', views.indice_edit, name='indice_edit'),
+    path('indice/testarFormula', views.indice_testarFormula, name='indice_testarFormula'),
+    path('indice/<int:pk>/testarFormula', views.indice_testarFormula, name='indice_testarFormula'),
+    path('indice/new', views.indice_new, name='indice_new'),
+
     path('modelos', views.modelos, name="modelos"),
     path('modelo/<int:pk>/', views.modelo_open, name='modelo_open'),
     path('modelo/new', views.modelo_new, name='modelo_new'),
@@ -25,6 +31,7 @@ urlpatterns = [
     path('modelo/<int:pk>/edit/', views.modelo_edit, name='modelo_edit'),
     path('modelo/prepararDF/<int:pk>', views.prepararDataFrameModelo_Request, name='prepararDataFrameModelo_Request'),
     path('modelo/treinar/<int:pk>', views.treinar_Request, name='treinar_Request'),
+    path('modelo/validar/<int:pk>', views.validar, name='validar'),
     path('modelo/testar/<int:pk>', views.testar, name='testar'),
     path('modelo/excluir_arquivo/<int:pk>', views.excluir_arquivo, name='excluir_arquivo'),
 
@@ -63,5 +70,7 @@ urlpatterns = [
     path('cortar/<int:pk>/<stack>', views.cortar, name="cortar"),
 
     path('mapa_json/<pk>/<stack>/<tipo>/<menu>', views.mapa_json, name='mapa_json' ),
+    path('mapateste_json/<tag>', views.mapateste_json, name='mapateste_json' ),
     path('summary_json/<pk>', views.summary_json, name='summary_json' ),
+    path('dados_json/<pk>', views.dados_json, name='dados_json' ),
 ]

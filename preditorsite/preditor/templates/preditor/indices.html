@@ -1,0 +1,77 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Índices</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+	      	<div class="text-end upgrade-btn">
+		        <a
+		          href="/indice/new"
+		          class="btn btn-primary"         
+		          >Novo</a
+		        >
+		    </div>
+    	</div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+					<h3 class="card-title mb-0 p-0">Índices Públicos</h3>
+			  <table class="table user-table table-hover">
+				<thead>
+				  <tr>
+				   <th class="border-top-0">Índice</th>
+				   <th class="border-top-0">Fórmula</th>
+				  </tr>
+				</thead>
+				<tbody id="body_edital">
+					{% for ip in indices_publicos %}
+						<tr>
+							<td>{{ip.tag}}</td>
+							<td>{{ip.formula}}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			  </table>
+
+				</div> 
+            </div>
+        </div>
+		<div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+					<h3 class="card-title mb-0 p-0">Meus Índices</h3>
+			  <table class="table user-table table-hover">
+				<thead>
+				  <tr>
+				   <th class="border-top-0">Índice</th>
+				   <th class="border-top-0">Fórmula</th>
+				   <th class="border-top-0">Responsável</th>
+				  </tr>
+				</thead>
+				<tbody id="body_edital">
+					{% for mi in meus_indices %}
+						<tr onclick="window.location='indice/{{mi.id}}/edit';" class="clickable-row">
+							<td>{{mi.tag}}</td>
+							<td>{{mi.formula}}</td>
+							<td>{{mi.responsavel}}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			  </table>
+
+				</div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

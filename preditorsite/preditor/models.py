@@ -71,7 +71,7 @@ class Area(models.Model):
     def __str__(self):
         return self.descricao
 class Raster(models.Model):
-    tag = models.CharField(max_length=200)
+    tag = models.CharField(max_length=200, unique=True)
     isIndex = models.BooleanField(default=False)
     formula = models.CharField(max_length=200, null=True, blank=True)
     responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)

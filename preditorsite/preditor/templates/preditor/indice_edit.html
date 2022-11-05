@@ -1,0 +1,124 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Editor de Índice</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+	
+	<form method="POST" class="form-horizontal" enctype="multipart/form-data">
+	{% csrf_token %}
+		{{ form.as_p }}
+        <p style="color:red;">{{erro}}</p>
+        <p style="color:green;">{{sucesso}}</p>
+		<button type="submit" class="btn btn-success" formaction="{{action}}">Salvar</button>
+        <button type="submit" class="btn btn-success" formaction="testarFormula">Testar</button>
+        <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}">
+            Visualizar
+        </a>
+        <a href="/indices" class="btn btn-success">
+            Voltar
+        </a>
+	</form>
+				</div> 
+            </div>
+        </div>
+        <div class="col-sm-8">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-0 p-0">Regras</h3>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <p>
+                                Regra 1: Cada item da fórmula deve ser separado po um espaço em branco;<br>
+
+                                <br>Definições:
+                                <br>ITEM: os itens podem ser:
+                                <br>    - limites de escopo;
+                                <br>    - operadores matemáticos;
+                                <br>    - raster:
+                                <br>RASTER: cada raster tem uma tag que o identifica unicamente;
+                                <br>    - a <b style="color: blue;">TAG</b> do raster deve ser toda em letra maiúscula;
+                                <br>    - para os satélites Sentinel Level 1A e 2C já estão cadastrados
+                                com as respecitivas tags em cada camada;
+                            </p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>
+                                Lista de Operadores:<br>
+                                    <br><b style="color: red;"> ( </b> - Início de escopo
+                                <br><b style="color: red;"> ) </b> - Final de escopo
+                                <br><b style="color: red;"> + </b> - soma
+                                <br><b style="color: red;"> - </b> - subtração
+                                <br><b style="color: red;"> * </b> - multiplicação
+                                <br><b style="color: red;"> / </b> - divisão
+                            </p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>
+                                Lista de Rasters:<br>
+                                {% for r in rasters %}
+                                    <br><b style="color: blue;"> {{r.tagOnSat}} </b> - {{r.band}}
+                                {% endfor %}
+
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <div id="myModal" data-backdrop="static" class="modal fade bd-example-modal-testindice" tabindex="-1" role="dialog"  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <center>
+                                      <div id="mapa">
+
+                                      </div>
+                                    </center>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                        </div>
+                        <div class="col-sm-4">
+                          <h3 class="page-title mb-0 p-0" id="tipo_map">Visualizar Fórmula</h3>
+                        </div>
+                        <div class="col-sm-5">
+                            <p id="erro" style="color:red;"></p>
+                        </div>
+                        <div class="col-sm-3">
+                          <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+{% endblock %}
+
