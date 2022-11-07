@@ -13,6 +13,9 @@ def testar_modelo(model, X_test, Y_test):
 	result = model.score(X_test, Y_test)
 	return result
 
+def classificar(model, df_dados_stack):
+	return model.predict(df_dados_stack)
+
 def validar_modelo(model, target, y, split_cross):
 	print("Verificando results")
 	cv = KFold(n_splits=split_cross, shuffle=True)

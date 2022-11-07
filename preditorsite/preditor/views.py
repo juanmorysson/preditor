@@ -340,6 +340,77 @@ def prepararDataFrameModelo(pk, percent):
 	modelo.percent = str(percent)
 	modelo.save()
 
+def prepararDataFrameStack(modelo_treinado, area, stack):
+	rms = Raster_Modelo.objects.filter(modelo=modelo_treinado.modelo)
+	s = "Sentinel" + stack[2:4]
+	sats = Satelite.objects.filter(descricao=s)
+	sat = None
+	for s in sats:
+		sat = s
+	df = pd.DataFrame()
+	for rm in rms:
+		path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta
+		r = rm.raster
+		nome = r.tag
+		if r.isIndex:
+			if r.formula is None:
+				path = path + '\\'
+				nome = nome.lower()
+			else:
+				path = path + '\\' + stack + '\\indices\\'
+		else:
+			path = path + '\\' + stack + '\\cortes\\'
+			rb = RasterBand.objects.get(satelite=sat, raster=r)
+			nome = rb.band
+		raster = rasterio.open(path + nome + '.tif')
+		array = raster.read(1)
+		nn = np.array(array)
+		val = nn.flatten()
+		vv = pd.Series(val)
+		df[r.tag] = vv
+	df = df.dropna()
+	return df, sat
+def classificar(request, arq_pk, area_pk, stack):
+    #if not request.user.has_perm('aSocial.delete_setor'):
+    #    raise PermissionDenied
+    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+    area = Area.objects.get(pk=area_pk)
+    projeto = area.projeto
+    modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
+    repo = RepoSentinel()
+    repo.level = stack[2:4]
+    repo.data = stack[4:13]
+    repo.sat = stack[0:2]
+    modelo = ia.ler_modelo_arquivo(modelo_treinado)
+    df, sat = prepararDataFrameStack(modelo_treinado, area, stack)
+    print(df.shape)
+    result = ia.classificar(modelo, df)
+    path_corte = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\cortes\\'
+    bandReferencia = rasterio.open(path_corte+sat.bandReferencia+'.tif')
+    path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao\\'
+    if os.path.isdir(path):
+    	print("path Já Criado")
+    else:
+    	os.mkdir(path)
+    gerarTiffPorDataFrame(result, path, bandReferencia)
+    return redirect('classificar_page', arq_pk, area_pk, stack)
+
+def gerarTiffPorDataFrame(pd, path, rasterReferencia):
+	band_geo = rasterReferencia.profile
+	array = rasterReferencia.read()
+	print(array.shape)
+	l = 0
+	for i in array:
+		for j in i:
+			for k in j:
+				if k!=0:
+					k=pd[l]
+					l=l+1
+	#band_geo.update({"count": 3})
+	print("criando rgb.tiff...")
+	print(array.shape)
+	with rasterio.open(path + 'teste.tif', 'w', **band_geo) as dest:
+		dest.write(array)
 def treinar_Request(request, pk):
 	percent = request.POST['percent']
 	max_depth = int(request.POST['max_depth'])
@@ -679,7 +750,7 @@ def stack(request, pk, stack):
     #    raise PermissionDenied
     #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
     area = Area.objects.get(pk=pk)
-    projeto = Projeto.objects.get(pk=area.projeto.pk)
+    projeto = area.projeto
     r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
     repo = RepoSentinel()
     repo.level = stack[2:4]
@@ -708,13 +779,32 @@ def stack(request, pk, stack):
     			if (arquivo.tipo == "tif"):
     				arquivo.desc = file
     				indices.append(arquivo)
-#    			dir = ""
-#    			if (l-len(dirpath))<0:
-#    				dir = dirpath[l-len(dirpath):]
-#    			arquivo.desc = '{}/{}'.format(dir, file)
-#    			indices.append(arquivo)
-    return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'r_indices':r_indices, 'cortes': cortes, 'repo':repo })
+    modelos = Modelo.objects.filter(responsavel=request.user)
+    modelos_treinados = ArquivoModelo.objects.filter(modelo__in=modelos)
+    return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'r_indices':r_indices, 'cortes': cortes, 'repo':repo, 'modelos_treinados':modelos_treinados })
 
+def classificar_page(request, arq_pk, area_pk, stack):
+    #if not request.user.has_perm('aSocial.delete_setor'):
+    #    raise PermissionDenied
+    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+    area = Area.objects.get(pk=area_pk)
+    projeto = area.projeto
+    modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
+    repo = RepoSentinel()
+    repo.level = stack[2:4]
+    repo.data = stack[4:13]
+    repo.sat = stack[0:2]
+
+    path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+    classificacoes = []
+    for dirpath, dirnames, filenames in os.walk(path+'\\classificacao'):
+    	for file in filenames:
+    		arquivo = Arquivo("","")
+    		arquivo.tipo = file[-3:]
+    		if (arquivo.tipo == "tif"):
+    			arquivo.desc = file
+    			classificacoes.append(arquivo)
+    return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado })
 
 def projeto_new(request):
     #if not request.user.has_perm('aSocial.add_setor'):

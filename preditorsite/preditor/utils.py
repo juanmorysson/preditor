@@ -128,7 +128,7 @@ def createOutputImageGDAL(outFilename, inDataset):
         sys.exit(-1)
     geoTransform = inDataset.GetGeoTransform()
     geoProjection = inDataset.GetProjection()
-    newDataset = driver.Create(outFilename, inDataset.RasterXSize, \
+    newDataset = driver.Create(outFilename, inDataset.RasterXSize,
     inDataset.RasterYSize, 1, gdal.GDT_Float32)
     newDataset.SetGeoTransform(geoTransform)
     newDataset.SetProjection(geoProjection)

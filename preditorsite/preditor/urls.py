@@ -59,6 +59,9 @@ urlpatterns = [
     path('altitude/gerar/<int:pk>/', views.altitude_gerar, name="altitude_gerar"),
     path('altitude/<int:pk>/', views.altitude, name="altitude"),
 
+    path('classificar_page/<int:arq_pk>/<int:area_pk>/<stack>', views.classificar_page, name="classificar_page"),
+    path('classificar/<int:arq_pk>/<int:area_pk>/<stack>', views.classificar, name="classificar"),
+
     path('download', views.download_sentinel, name="download_sentinel"),
     path('download_page', views.download_page, name="download_page"),
     path('trescores', views.trescores, name="trescores"),

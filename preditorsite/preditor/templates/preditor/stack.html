@@ -81,6 +81,44 @@
 					</div>
 				</div>
 			</div>
+			<h3 class="card-title mb-0 p-10"> Classificação Preditiva </h3>
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="card">
+						<div class="card-body">
+							Escolha o modelo:
+							<table class="table user-table table-hover">
+									<tbody>
+										<tr>
+											<th>
+												Nome Modelo
+											</th>
+											<th>
+												Modelo Treinado
+											</th>
+											<th>
+												Sobre o modelo
+											</th>
+										</tr>
+										{% for mod in modelos_treinados %}
+											<tr onclick="window.location='/classificar_page/{{mod.id}}/{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}';">
+												<td>
+													{{mod.modelo}}
+												</td>
+												<td>
+													{{mod.tipo}}
+												</td>
+												<td>
+
+												</td>
+											</tr>
+										{% endfor %}
+									</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
         </div>
         <div class="col-sm-4">
         	<h3 class="card-title mb-0 p-10"> Imagens Recortadas </h3>
