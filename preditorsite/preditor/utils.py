@@ -1,3 +1,4 @@
+import pandas as pd
 from django.shortcuts import get_object_or_404
 from pyproj import Transformer
 from django.shortcuts import redirect
@@ -10,6 +11,7 @@ import math
 import json
 import zipfile
 from osgeo import gdal
+import rasterio
 
 SEQ_COLOR_DEFAULT = [
 	(255, 0, 0, 255),
@@ -156,6 +158,44 @@ def cortar_tif(path_mask, idmask, input, output):
          destNameOrDestDS=out,
 		 **kwargs)
 
+def exportRGBAClasse(path, file, colors):
+	im = Image.open(os.path.join(path, file+'.tif'))
+	im.thumbnail(im.size)
+	wid, hgt = im.size
+	im2 = rasterio.open(path + file + '.tif').read()
+	#descobrir valores máximo e mínimo
+	image = Image.new("RGBA", (wid, hgt), (255,255,255,0))
+	for x in range(0, wid):
+		for y in range(0, hgt):
+			p = im2[0, y-1, x-1]
+			if p == 0:
+				color = (0, 0, 0, 0)
+			else:
+				color = (colors.loc[p,'r'], colors.loc[p,'g'], colors.loc[p,'b'],255)
+			image.putpixel((x, y), color)
+	outfile = os.path.join(path, file +".png")
+	image.save(outfile, "PNG", quality=100)
+
+def hex_to_rgb(hex_string):
+    str_len = len(hex_string)
+    if hex_string.startswith("#"):
+        if str_len == 7:
+            r_hex = hex_string[1:3]
+            g_hex = hex_string[3:5]
+            b_hex = hex_string[5:7]
+        elif str_len == 4:
+            r_hex = hex_string[1:2] * 2
+            g_hex = hex_string[2:3] * 2
+            b_hex = hex_string[3:4] * 2
+    elif str_len == 3:
+        r_hex = hex_string[0:1] * 2
+        g_hex = hex_string[1:2] * 2
+        b_hex = hex_string[2:3] * 2
+    else:
+        r_hex = hex_string[0:2]
+        g_hex = hex_string[2:4]
+        b_hex = hex_string[4:6]
+    return int(r_hex, 16), int(g_hex, 16), int(b_hex, 16)
 
 def exportRGBA(path, file, min, max, div=4, seq=SEQ_COLOR_DEFAULT, gradiente=False):
 	im = Image.open(os.path.join(path, file+'.tif'))

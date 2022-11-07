@@ -343,10 +343,7 @@ def prepararDataFrameModelo(pk, percent):
 def prepararDataFrameStack(modelo_treinado, area, stack):
 	rms = Raster_Modelo.objects.filter(modelo=modelo_treinado.modelo)
 	s = "Sentinel" + stack[2:4]
-	sats = Satelite.objects.filter(descricao=s)
-	sat = None
-	for s in sats:
-		sat = s
+	sat = Satelite.objects.filter(descricao=s)[0]
 	df = pd.DataFrame()
 	for rm in rms:
 		path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta
@@ -371,46 +368,71 @@ def prepararDataFrameStack(modelo_treinado, area, stack):
 	df = df.dropna()
 	return df, sat
 def classificar(request, arq_pk, area_pk, stack):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
-    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
-    area = Area.objects.get(pk=area_pk)
-    projeto = area.projeto
-    modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
-    repo = RepoSentinel()
-    repo.level = stack[2:4]
-    repo.data = stack[4:13]
-    repo.sat = stack[0:2]
-    modelo = ia.ler_modelo_arquivo(modelo_treinado)
-    df, sat = prepararDataFrameStack(modelo_treinado, area, stack)
-    print(df.shape)
-    result = ia.classificar(modelo, df)
-    path_corte = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\cortes\\'
-    bandReferencia = rasterio.open(path_corte+sat.bandReferencia+'.tif')
-    path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao\\'
-    if os.path.isdir(path):
-    	print("path Já Criado")
-    else:
-    	os.mkdir(path)
-    gerarTiffPorDataFrame(result, path, bandReferencia)
-    return redirect('classificar_page', arq_pk, area_pk, stack)
+	#if not request.user.has_perm('aSocial.delete_setor'):
+	#    raise PermissionDenied
+	#request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+	area = Area.objects.get(pk=area_pk)
+	modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
+	repo = RepoSentinel()
+	repo.level = stack[2:4]
+	repo.data = stack[4:13]
+	repo.sat = stack[0:2]
+	modelo = ia.ler_modelo_arquivo(modelo_treinado)
+	df, sat = prepararDataFrameStack(modelo_treinado, area, stack)
+	print(df.shape)
+	result = ia.classificar(modelo, df)
+	path_corte = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\cortes\\'
+	bandReferencia = rasterio.open(path_corte+sat.bandReferencia+'.tif')
+	path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao'
+	if os.path.isdir(path):
+		print("path Já Criado")
+	else:
+		os.mkdir(path)
+	path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao\\' + str(
+		modelo_treinado.pk) + '\\'
+	if os.path.isdir(path):
+		print("path Já Criado")
+	else:
+		os.mkdir(path)
+	m = modelo_treinado.modelo
+	classes = ClasseModelo.objects.filter(modelo=m)
+	classes2 = []
+	numeros = []
+	i = 1
+	for classe in classes:
+		classes2.append(classe.classe)
+		numeros.append(i)
+		i = i + 1
+	classes_num = pd.DataFrame()
+	classes_num['num'] = numeros
+	classes_num['classe'] = classes2
+	classes_num = classes_num.set_index('classe')
+	result_num = []
+	for r in result:
+		result_num.append(classes_num.loc[r,'num'])
+	gerarTiffPorDataFrame(result_num, path, bandReferencia, modelo_treinado.tipo.filename)
+	return redirect('classificar_page', arq_pk, area_pk, stack)
 
-def gerarTiffPorDataFrame(pd, path, rasterReferencia):
+def gerarTiffPorDataFrame(pd, path, rasterReferencia, name="Classificador"):
 	band_geo = rasterReferencia.profile
 	array = rasterReferencia.read()
-	print(array.shape)
+	array_classe = []
 	l = 0
 	for i in array:
+		ii = []
 		for j in i:
+			jj = []
 			for k in j:
 				if k!=0:
 					k=pd[l]
 					l=l+1
-	#band_geo.update({"count": 3})
+				jj.append(k)
+			ii.append(jj)
+		array_classe.append(ii)
+	array_classe = np.array(array_classe)
 	print("criando rgb.tiff...")
-	print(array.shape)
-	with rasterio.open(path + 'teste.tif', 'w', **band_geo) as dest:
-		dest.write(array)
+	with rasterio.open(path + name+'.tif', 'w', **band_geo) as dest:
+		dest.write(array_classe)
 def treinar_Request(request, pk):
 	percent = request.POST['percent']
 	max_depth = int(request.POST['max_depth'])
@@ -787,24 +809,47 @@ def classificar_page(request, arq_pk, area_pk, stack):
     #if not request.user.has_perm('aSocial.delete_setor'):
     #    raise PermissionDenied
     #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
-    area = Area.objects.get(pk=area_pk)
-    projeto = area.projeto
-    modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
-    repo = RepoSentinel()
-    repo.level = stack[2:4]
-    repo.data = stack[4:13]
-    repo.sat = stack[0:2]
-
-    path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-    classificacoes = []
-    for dirpath, dirnames, filenames in os.walk(path+'\\classificacao'):
-    	for file in filenames:
-    		arquivo = Arquivo("","")
-    		arquivo.tipo = file[-3:]
-    		if (arquivo.tipo == "tif"):
-    			arquivo.desc = file
-    			classificacoes.append(arquivo)
-    return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado })
+	area = Area.objects.get(pk=area_pk)
+	projeto = area.projeto
+	modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
+	repo = RepoSentinel()
+	repo.level = stack[2:4]
+	repo.data = stack[4:13]
+	repo.sat = stack[0:2]
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta
+	classificacoes = []
+	for dirpath, dirnames, filenames in os.walk(path+'\\'+stack+'\\classificacao\\'+str(arq_pk)):
+		for file in filenames:
+			arquivo = Arquivo("","")
+			arquivo.tipo = file[-3:]
+			if (arquivo.tipo == "tif"):
+				arquivo.desc = file
+				classificacoes.append(arquivo)
+	vars_stack = []
+	for dirpath, dirnames, filenames in os.walk(path+'\\'+stack):
+		for file in filenames:
+			if (file[-3:] == "tif"):
+				vars_stack.append(file[:-4])
+	for item in os.listdir(path):
+		if (item[-3:] == "tif"):
+			vars_stack.append(item[:-4].upper())
+	print(vars_stack)
+	r_modelo = Raster_Modelo.objects.filter(modelo=modelo_treinado.modelo)
+	vars_modelo = []
+	valido = True
+	for r in r_modelo:
+		if r.raster.isIndex:
+			ok = vars_stack.__contains__(r.raster.tag.upper())
+		else:
+			sat = Satelite.objects.filter(descricao="Sentinel1C")[0]
+			rr = RasterBand.objects.filter(raster=r.raster, satelite=sat)[0]
+			tag = rr.band
+			ok = vars_stack.__contains__(tag.upper())
+		if ok == False:
+			valido = False
+		var = Arquivo(r.raster.tag, ok)
+		vars_modelo.append(var)
+	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
 
 def projeto_new(request):
     #if not request.user.has_perm('aSocial.add_setor'):
@@ -1517,6 +1562,7 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 	path = ""
 	file = ""
 	div = 10
+	classi = False
 	paleta = utils.SEQ_COLOR_DEFAULT
 	if menu=="Projeto":
 		area = Area.objects.get(pk=pk)
@@ -1561,6 +1607,14 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 			path = path[:-8]+pasta
 			paleta = utils.SEQ_GREY_SCALE_17
 			div = 16
+		if (tipo[:7] == 'Classi_'):
+			classi = True
+			arq_id = tipo[7:].split('*')[0]
+			tipo = tipo[7:].split('*')[1]
+			pasta = 'classificacao/'+arq_id+'/'
+			path = path[:-8] + pasta
+			paleta = utils.SEQ_GREY_SCALE_17
+			div = 16
 		if file =="":
 			file = tipo
 		src = rasterio.open(path+file+'.tif')
@@ -1577,7 +1631,30 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 		min_n = src_saida.min()
 		if (tipo=="Declividade" or tipo=="Altitude"):
 			min_n = 0.0
-		utils.exportRGBA(path, file, min_n, src_saida.max(), div, paleta)
+		if classi:
+			modelo = Modelo.objects.get(pk=2)
+			classes = ClasseModelo.objects.filter(modelo=modelo)
+			reds = []
+			greens = []
+			blues = []
+			numeros = []
+			i = 1
+			for classe in classes:
+				r, g, b= utils.hex_to_rgb(classe.cor)
+				reds.append(r)
+				greens.append(g)
+				blues.append(b)
+				numeros.append(i)
+				i =i+1
+			colors = pd.DataFrame()
+			colors['num'] = numeros
+			colors['r'] = reds
+			colors['g'] = greens
+			colors['b'] = blues
+			colors = colors.set_index('num')
+			utils.exportRGBAClasse(path, file, colors)
+		else:
+			utils.exportRGBA(path, file, min_n, src_saida.max(), div, paleta)
 		#add imagem do disco
 		merc = os.path.join(path, file+".png")
 		if not os.path.isfile(merc):

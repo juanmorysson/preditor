@@ -21,10 +21,11 @@ def validar_modelo(model, target, y, split_cross):
 	cv = KFold(n_splits=split_cross, shuffle=True)
 	results = cross_val_score(model, target, y, cv=cv)
 	mean = results.mean()
-	dv = results.std()
-	menor = "%.5f" % ((mean - 2 * dv) * 100)
-	maior = "%.5f" % ((mean + 2 * dv) * 100)
-	mean = "%.5f" % (results.mean() * 100)
+	max = results.max()
+	min = results.min()
+	menor = "%.5f" % (min * 100)
+	maior = "%.5f" % (max * 100)
+	mean = "%.5f" % (mean * 100)
 	return mean, menor, maior
 def treinar_modelo(target, y, tipo, max_depth):
 	model = None
