@@ -63,6 +63,7 @@ urlpatterns = [
     path('classificar/<int:arq_pk>/<int:area_pk>/<stack>', views.classificar, name="classificar"),
 
     path('download', views.download_sentinel, name="download_sentinel"),
+    path('preparar_download', views.preparar_download_sentinel, name="preparar_download_sentinel"),
     path('download_page', views.download_page, name="download_page"),
     path('trescores', views.trescores, name="trescores"),
     path('trescores_page', views.trescores_page, name="trescores_page"),

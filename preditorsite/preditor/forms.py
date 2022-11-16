@@ -6,11 +6,10 @@ class ModeloForm(forms.ModelForm):
 
     class Meta:
         model = Modelo
-        fields = ( 'descricao','pasta', )
+        fields = ( 'descricao', )
 
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'pasta': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 class IndiceForm(forms.ModelForm):
@@ -56,20 +55,20 @@ class ProjetoForm(forms.ModelForm):
 
     class Meta:
         model = Projeto
-        fields = ( 'descricao','pasta', )
+        fields = ( 'descricao',)
 
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'pasta': forms.TextInput(attrs={'class': 'form-control'}),
+
         }
 
 class AreaForm(forms.ModelForm):
 
     class Meta:
         model = Area
-        fields = ('descricao','pasta', )
+        fields = ('descricao', )
 
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'pasta': forms.TextInput(attrs={'class': 'form-control'}),
+
         }

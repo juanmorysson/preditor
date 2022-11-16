@@ -16,27 +16,23 @@
 <div class="container-fluid">
     <div class="row">
         <!-- column -->
-        <div class="col-sm-12">
+        <div class="col-sm-8">
             <div class="card">
                 <div class="card-body">
-                    <center>
-                        <form method="POST">
-                            {% csrf_token %}
-                            <div class="col-sm">
-                                De: <input type="date" name="data_ini" value="{{data_ini}}">
-                            </div>
-                            <div class="col-sm">
-                                Para: <input type="date"  name="data_fim" value="{{data_fim}}">
-                            </div>
-                            <button type="submit" formaction="/download">
-                                Download
-                            </button>
-                        </form>
-                    </center>
-                </div> 
+                    <p class="col-sm-12">
+                    Disponíveia par Download (Busca):
+                    </p>
+                    <table class="table user-table table-hover">
+                        <tbody id="body_edital">
+                            {% for prd in prds %}
+                                <tr >
+                                    <td>{{prd}}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
-        <div class="col-sm-12">
             <div class="card">
                 <div class="card-body">
                     <p class="col-sm-12">
@@ -61,6 +57,45 @@
                         </tbody>
                     </table>
                 </div> 
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="col-sm">
+                                De: <input type="date" name="data_ini" value="{{data_ini}}" class="form-control">
+                            </div>
+                            <div class="col-sm">
+                                Para: <input type="date"  name="data_fim" value="{{data_fim}}" class="form-control">
+                            </div>
+                            <div class="col-sm">
+                                Satélite:
+                                <select name="satelite" class="form-control">
+                                    <option value="S2MSI1C" >Sentinel 1C</option>
+                                    <option value="S2MSI2A" selected>Sentinel 2A</option>
+                                </select>
+                            </div>
+                            <div class="col-sm">
+                                Máscara (Shape) Área de Interesse:
+                                <div class="col-sm">
+                                    <input type="file" name="mask" value="{{mask}}" accept=".geojson">
+			                    </div>
+                                <div class="error-msg">
+                                    {{ error }}
+                                </div>
+                            </div>
+                            <br>
+                            <button type="submit" formaction="/preparar_download" class="btn btn-secondary">
+                                Verificar
+                            </button>
+                            <button type="submit" formaction="/download" class="btn btn-secondary">
+                                Download
+                            </button>
+
+                        </form>
+                </div>
             </div>
         </div>
     </div>

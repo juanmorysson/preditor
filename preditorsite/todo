@@ -1,11 +1,19 @@
-# Treinamento
+URGENTE: ler modelo externo............
 
+# Treinamento
+    - acuráciia e teste logo junto ao treinar
+    - relatório de evolução por modelo
+
+# Classificação:
+    - poder alterar nome do índice para se adaptar ao modelo
+
+# Importar modelo de outra fonte (satelite)
+    - cadastrar cada banda
+    - setar cores de cada classe
+    - identificar cada varável
 
 # Segurança:
-	- permissões de acesso por tela
-	- permissões por projeto
 	- fazer cadastro obrigatório para ter acesso às telas padrão
-	- listar apenas projetos e modelos do "dono"
 
 # Layout
 	- mudar para cor mais clara 
@@ -13,12 +21,6 @@
 	- cores botões - ok
 	- aproveitar melhor os espaços 
 	- criar logo do preditor em T - ok
-	- menu esquerdo
-		- desfazer menu???? - colocar superio????
-		- modificar icones para cada menu
-		- separar menu de ferramentas extras
-		- reduzir menu esquerdo a hamburguinho
-
 
 # Ferramenta
 	# Telas:
@@ -31,9 +33,11 @@
 	# Demarcar área
 		- deixar botão mais vizível
 		- salvar o geojson direto no projeto
-	# download de imagens
-		- automática?
-		- fazer funcionar com Level 2A
+	# download de imagens de satélite
+		- up mascara da área desejada
+		- corrigir o retorno do satelite e da mascara no Verificar ***************
+		- fazer o download a partir dos dados de um projeto (Setar mascara com area de interesse)
+		- fazer o download a partir dos dados de um modelo (juntar os poligonos e setar mascara)
 
 	# extrair imagens da área
 		- criar funcionalidade de fazer stack com índices por data
@@ -51,30 +55,12 @@
 				        - criar botão publicar
 				            - enviar email para análise
 
-
 		- datum: Sirgas (Brasil)
 			- verificar se é necessário e possível usar
-
-	# Gerar modelo 
-		- separar lista de indices e cortes
-		    - listar inidices só publicos ou de resposabilidade do usuário
-		- gerar modelos
-		    - verificar as restrições de cada modelo
 
     # hiper parâmetros de cada modelo: estudar
         https://topepo.github.io/caret/train-models-by-tag.html#Random_Forest
 
-
-	# Qualificar Imagem pelo modelo
-		- testar de leitura do modelo
-			- *********
-		- extrair dados:
-			- só os dados mais importantes?
-		- rodar no modelo
-		- exibir mapa qualitativo
-		- exibir relatório
-			- acurácia;
-			...
 
 	# progresso
 		- atualizar automáticamente a página de progressos
@@ -85,11 +71,7 @@
 
 
 	# Outras funcionalidades (não ligadas a projetos):
-		- o proprio usuário escolhe as imagens
-		- ndvi 
-			- desligar dos projetos
 		- trÊs cores
-
 
 	# ver qual o melhor produto - ok
 		1c ou 2A ou 2B - usar 2A pq corrige sobre TOA

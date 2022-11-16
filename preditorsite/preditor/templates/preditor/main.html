@@ -16,7 +16,7 @@
       content="Material Pro Lite is powerful and clean admin dashboard template, inpired from Bootstrap Framework"
     />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Home Preditor</title>
+    <title>Class FITO</title>
     <link
       rel="canonical"
       href="https://www.wrappixel.com/templates/materialpro-lite/"
@@ -26,7 +26,7 @@
       rel="icon"
       type="image/png"
       sizes="16x16"
-      href="{% static 'assets/images/preditor_ico.png' %}"
+      href="{% static 'assets/images/fito_ico.png' %}"
     />
 <script src="{% static 'assets/plugins/bootstrap/js/tether.min.js' %}"></script>
 
@@ -96,14 +96,12 @@
               <b class="logo-icon" style="color: white;">
                 <!--You can put here icon as well // <i class="wi wi-sunset"></i> //-->
                 <!-- Dark Logo icon -->
-                PREDI
                 <img
-                  src="{% static 'assets/images/preditor_ico.png' %}"
+                  src="{% static 'assets/images/Classfito.png' %}"
                   alt="homepage"
                   class="dark-logo"
                   style="text-align: left;"
                 />
-                OR
               </b>
               <!--End Logo icon -->
               
@@ -155,7 +153,7 @@
               <!-- ============================================================== -->
 
               <li class="nav-item search-box">
-                usar essa área para processamentos?
+
               </li>
             </ul>
 
@@ -236,7 +234,7 @@
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/modelos"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-image"></i
                   ><span class="hide-menu">Modelar</span></a
                 >
               </li>
@@ -245,7 +243,7 @@
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/projetos"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-image-album"></i
                   ><span class="hide-menu">Projetos</span></a
                 >
               </li>
@@ -254,22 +252,17 @@
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/indices"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-information"></i
                   ><span class="hide-menu">Índices</span></a
                 >
               </li>
-              {% if request.session.projeto_pk %}
-              <li class="sidebar-item">
-                <a href="/projeto/{{ request.session.projeto_pk }}/">{{ request.session.projeto_desc }}</a> - <a href="/clear_projeto_sessao"> Clear </a>
-              </li>
-              {% endif %}
               
               <li class="sidebar-item">
                 <a
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/draw2"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-invert-colors"></i
                   ><span class="hide-menu">Desenhar</span></a
                 >
               </li>
@@ -278,10 +271,11 @@
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/download_page"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-json"></i
                   ><span class="hide-menu">Download</span></a
                 >
               </li>
+              <!--
               <li class="sidebar-item">
                 <a
                   class="sidebar-link waves-effect waves-dark sidebar-link"
@@ -290,19 +284,32 @@
                   ><i class="mdi me-2 mdi-home"></i
                   ><span class="hide-menu">tres cores</span></a
                 >
-              </li>
+              </li>-->
               <li class="sidebar-item">
                 <a
                   class="sidebar-link waves-effect waves-dark sidebar-link"
                   href="/progressos"
                   aria-expanded="false"
-                  ><i class="mdi me-2 mdi-home"></i
+                  ><i class="mdi me-2 mdi-information"></i
                   ><span class="hide-menu">Processamentos</span></a
                 >
               </li>
-              {% if perms.aSocial.list_pagamento %}
-              {% endif %}
+                    {% endif %}
             </ul>
+            <center>
+            <a
+                  class="sidebar-link waves-effect waves-dark sidebar-link"
+                  href="http://www.ifgoiano.edu.br"
+                  aria-expanded="false"
+                  >
+                <img
+                  src="{% static 'assets/images/logo_urutai.png' %}"
+                  alt="homepage"
+                  class="dark-logo"
+                  style="text-align: left;"
+                />
+                </a>
+              </center>
           </nav>
         </div>
       </aside>
@@ -310,7 +317,7 @@
 
 
               
-      {% endif %}
+
       <!-- ============================================================== -->
       <!-- End Left Sidebar - style you can find in sidebar.scss  -->
       <!-- ============================================================== -->

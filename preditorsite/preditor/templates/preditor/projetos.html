@@ -29,7 +29,6 @@
 				<thead>
 				  <tr>
 				   <th class="border-top-0">Projeto</th>
-				   <th class="border-top-0">Pasta</th>
 				   <th class="border-top-0">Data Criação</th>
 				   <th class="border-top-0">Responsavel</th>
 				  </tr>
@@ -38,7 +37,6 @@
 					{% for projeto in projetos %}
 						<tr onclick="window.location='projeto/{{projeto.id}}';" class="clickable-row">
 							<td>{{projeto.descricao}}</td>
-							<td>{{projeto.pasta}}</td>
 							<td>{{projeto.data_criacao}}</td>
 							<td>{{projeto.responsavel}}</td>
 						</tr>

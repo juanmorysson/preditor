@@ -15,6 +15,7 @@ import joblib
 from . import calc, utils, progress, ia
 from area import area as c_area
 import csv
+import secrets
 from sklearn.model_selection import train_test_split
 
 #import ee
@@ -41,7 +42,6 @@ from rasterio.plot import show
 from datetime import datetime
 from rasterio.plot import show_hist
 from collections import OrderedDict
-from sentinelsat import SentinelAPI
 from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 # Create your views here.
 
@@ -49,7 +49,6 @@ from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 def index(request):
 	return render(request, 'preditor/index.html', {})
 def mapa_cerrado(request):
-	#ia.ler_modelo()
 	cerrado = f"media/cerrado.geojson"
 	m = folium.Map(
 		location=[-14.7494, -48.6202],
@@ -62,92 +61,91 @@ def mapa_cerrado(request):
 
 	return render(request, 'preditor/mapa_cerrado.html', {'my_map': m})
 def modelos(request):
-    #if not request.user.has_perm('aSocial.list_setor'):
-    #    raise PermissionDenied
-    modelos = Modelo.objects.all()
-    return render(request, 'preditor/modelos.html', {'modelos': modelos })
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelos = Modelo.objects.filter(responsavel=request.user)
+	return render(request, 'preditor/modelos.html', {'modelos': modelos })
 
 def indices(request):
-    #if not request.user.has_perm('aSocial.list_setor'):
-    #    raise PermissionDenied
-    indices_publicos = Raster.objects.filter(publica=True, isIndex=True, formula__isnull=False)
-    meus_indices = Raster.objects.filter(publica=False, isIndex=True, responsavel=request.user)
-    return render(request, 'preditor/indices.html', {'indices_publicos': indices_publicos,  'meus_indices':meus_indices})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	indices_publicos = Raster.objects.filter(publica=True, isIndex=True, formula__isnull=False)
+	meus_indices = Raster.objects.filter(publica=False, isIndex=True, responsavel=request.user)
+	return render(request, 'preditor/indices.html', {'indices_publicos': indices_publicos,  'meus_indices':meus_indices})
 def indice_new(request):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    erro = ""
-    if request.method == "POST":
-        form = IndiceForm(request.POST)
-        if form.is_valid():
-            i = form.save(commit=False)
-            i.responsavel = request.user
-            i.isIndex = True
-            x = erroFormula(i.formula)
-            if x==False:
-            	if testeFormula(i.formula, i.tag):
-            		i.save()
-            		return redirect('indices')
-            	else:
-            		erro="A fórmula não executou"
-            else:
-            	erro = x
-
-    else:
-        form = IndiceForm()
-    rasters = RasterBand.objects.all()
-    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro':erro})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	erro = ""
+	if request.method == "POST":
+	    form = IndiceForm(request.POST)
+	    if form.is_valid():
+	        i = form.save(commit=False)
+	        i.responsavel = request.user
+	        i.isIndex = True
+	        x = erroFormula(i.formula)
+	        if x==False:
+	        	if testeFormula(i.formula, i.tag):
+	        		i.save()
+	        		return redirect('indices')
+	        	else:
+	        		erro="A fórmula não executou"
+	        else:
+	        	erro = x
+	else:
+	    form = IndiceForm()
+	rasters = RasterBand.objects.all()
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro':erro})
 
 def indice_edit(request, pk):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    i = Raster.objects.get(pk=pk)
-    erro = ""
-    if request.method == "POST":
-        form = IndiceForm(request.POST, instance=i)
-        if form.is_valid():
-            i = form.save(commit=False)
-            x = erroFormula(i.formula)
-            if x == False:
-            	if testeFormula(i.formula, i.tag):
-            		i.save()
-            		return redirect('indices')
-            	else:
-            		erro="A fórmula não executou"
-            else:
-            	erro = x
-    else:
-        form = IndiceForm(instance=i)
-    rasters = RasterBand.objects.all()
-    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro': erro})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	i = Raster.objects.get(pk=pk)
+	erro = ""
+	if request.method == "POST":
+	    form = IndiceForm(request.POST, instance=i)
+	    if form.is_valid():
+	        i = form.save(commit=False)
+	        x = erroFormula(i.formula)
+	        if x == False:
+	        	if testeFormula(i.formula, i.tag):
+	        		i.save()
+	        		return redirect('indices')
+	        	else:
+	        		erro="A fórmula não executou"
+	        else:
+	        	erro = x
+	else:
+	    form = IndiceForm(instance=i)
+	rasters = RasterBand.objects.all()
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro': erro})
 
 def indice_testarFormula(request, pk=0):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    erro = ""
-    sucesso = ""
-    action = 'new'
-    if pk!=0:
-    	i = Raster.objects.get(pk=pk)
-    	action = 'edit'
-    if request.method == "POST":
-    	form = IndiceForm(request.POST)
-    	if pk != 0:
-    		form = IndiceForm(request.POST, instance=i)
-    	if form.is_valid():
-    		i = form.save(commit=False)
-    		x = erroFormula(i.formula)
-    		if x == False:
-        		if testeFormula(i.formula, i.tag):
-        			sucesso = "Fómula validada!"
-        		else:
-        			erro = "A fórmula não executou"
-    		else:
-        		erro = x
-    else:
-        form = IndiceForm(instance=i)
-    rasters = RasterBand.objects.all()
-    return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	erro = ""
+	sucesso = ""
+	action = 'new'
+	if pk!=0:
+		i = Raster.objects.get(pk=pk)
+		action = 'edit'
+	if request.method == "POST":
+		form = IndiceForm(request.POST)
+		if pk != 0:
+			form = IndiceForm(request.POST, instance=i)
+		if form.is_valid():
+			i = form.save(commit=False)
+			x = erroFormula(i.formula)
+			if x == False:
+				if testeFormula(i.formula, i.tag):
+					sucesso = "Fómula validada!"
+				else:
+					erro = "A fórmula não executou"
+			else:
+				erro = x
+	else:
+		form = IndiceForm(instance=i)
+	rasters = RasterBand.objects.all()
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
 def testeFormula(formula, tag):
 	level = "1C"
 	path = os.getcwd() + '\\arquivos\\testes\\'+level
@@ -192,14 +190,17 @@ def erroFormula(formula):
 	return erro
 
 def modelo_open(request, pk):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = get_object_or_404(Modelo, pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	error = request.session.get('error')
 	if error == None:
 		error = ''
 	else:
 		del request.session['error']
-	modelo = get_object_or_404(Modelo, pk=pk)
+
 	path = os.getcwd()+'\\arquivos\\modelos\\'+modelo.pasta
 	classes = ClasseModelo.objects.filter(modelo=modelo)
 	rasters = Raster.objects.all()
@@ -236,8 +237,12 @@ def modelo_open(request, pk):
 	return render(request, 'preditor/modelo_open.html', {'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
 
 def excluir_arquivo(request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	arq = ArquivoModelo.objects.get(pk=pk)
 	modelo = arq.modelo
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	filename = arq.tipo.filename + str(arq.id) + '.sav'
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
 	os.remove(path_model + filename)
@@ -245,10 +250,14 @@ def excluir_arquivo(request, pk):
 	return redirect('modelo_open', pk=modelo.pk)
 
 def gerar_stacks_modelo (request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	stack = ""
 	vars = []
 	rasters = []
 	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	rms = Raster_Modelo.objects.filter(modelo=modelo)
 	for rm in rms:
 		Raster_Modelo.delete(rm)
@@ -272,6 +281,11 @@ def gerar_stacks_modelo (request, pk):
 	return redirect('modelo_open', pk=pk)
 
 def prepararDataFrameModelo_Request(request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	percent = request.POST['percent']
 	prepararDataFrameModelo(pk, percent)
 	return redirect('modelo_open', pk=pk)
@@ -368,11 +382,12 @@ def prepararDataFrameStack(modelo_treinado, area, stack):
 	df = df.dropna()
 	return df, sat
 def classificar(request, arq_pk, area_pk, stack):
-	#if not request.user.has_perm('aSocial.delete_setor'):
-	#    raise PermissionDenied
-	#request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	area = Area.objects.get(pk=area_pk)
 	modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
+	if modelo_treinado.modelo.responsavel != request.user:
+		return redirect('modelos')
 	repo = RepoSentinel()
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
@@ -434,6 +449,11 @@ def gerarTiffPorDataFrame(pd, path, rasterReferencia, name="Classificador"):
 	with rasterio.open(path + name+'.tif', 'w', **band_geo) as dest:
 		dest.write(array_classe)
 def treinar_Request(request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	percent = request.POST['percent']
 	max_depth = int(request.POST['max_depth'])
 	for k, v in request.POST.lists():
@@ -517,8 +537,12 @@ def validar(request, pk):
 	arq_modelo.save()
 	return redirect('modelo_open', pk=modelo.pk)
 def testar(request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	arq_modelo = ArquivoModelo.objects.get(pk=pk)
 	modelo = arq_modelo.modelo
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
 	tipo = arq_modelo.tipo
 	model = ia.ler_modelo_arquivo(arq_modelo)
@@ -536,7 +560,11 @@ def testar(request, pk):
 	return redirect('modelo_open', pk=modelo.pk)
 
 def ver_stacks_modelo (request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
 	stack = modelo.stack
 	classes = ClasseModelo.objects.filter(modelo=modelo)
 	areas = AreaModelo.objects.filter(classe__in=classes)
@@ -568,249 +596,248 @@ def ver_stacks_modelo (request, pk):
 	return render(request, 'preditor/modelo_stacks.html', {'modelo':modelo, 'list':list})
 
 def modelo_new(request):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    if request.method == "POST":
-        form = ModeloForm(request.POST)
-        if form.is_valid():
-            modelo = form.save(commit=False)
-            modelo.responsavel = request.user
-            modelo.data_criacao = timezone.now()
-            pasta=request.POST['pasta'].replace(" ", "")
-            modelo.pasta = pasta 
-            os.mkdir('arquivos/modelos/'+pasta)
-            os.mkdir('arquivos/modelos/'+pasta+'/temp')
-            os.mkdir('arquivos/modelos/'+pasta+'/masks')
-            modelo.save()
-            return redirect('modelo_open', pk=modelo.pk)
-    else:
-        form = ModeloForm()
-    return render(request, 'preditor/modelo_edit.html', {'form': form})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	if request.method == "POST":
+		form = ModeloForm(request.POST)
+		if form.is_valid():
+			modelo = form.save(commit=False)
+			modelo.responsavel = request.user
+			modelo.data_criacao = timezone.now()
+			pasta=secrets.token_hex(nbytes=6)
+			modelo.pasta = pasta
+			os.mkdir('arquivos/modelos/'+pasta)
+			os.mkdir('arquivos/modelos/'+pasta+'/temp')
+			os.mkdir('arquivos/modelos/'+pasta+'/masks')
+			modelo.save()
+			return redirect('modelo_open', pk=modelo.pk)
+	else:
+		form = ModeloForm()
+	return render(request, 'preditor/modelo_edit.html', {'form': form})
 
 def modelo_edit(request, pk):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    modelo = Modelo.objects.get(pk=pk)
-    pasta_old = modelo.pasta
-    if request.method == "POST":
-        form = ModeloForm(request.POST, instance=modelo)
-        if form.is_valid():
-            modelo = form.save(commit=False)
-            pasta=request.POST['pasta'].replace(" ", "")
-            try:
-            	modelo.pasta = pasta
-            	os.rename(os.path.join('arquivos/modelos/', pasta_old),os.path.join('arquivos/modelos/', pasta))
-            except:
-            	print("não mudou a pasta: Acesso negado")
-            modelo.save()
-            return redirect('modelo_open', pk=modelo.pk)
-    else:
-        form = ModeloForm(instance=modelo)
-    return render(request, 'preditor/modelo_edit.html', {'form': form})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
+	pasta_old = modelo.pasta
+	if request.method == "POST":
+		form = ModeloForm(request.POST, instance=modelo)
+		if form.is_valid():
+			modelo = form.save(commit=False)
+			modelo.save()
+			return redirect('modelo_open', pk=modelo.pk)
+	else:
+		form = ModeloForm(instance=modelo)
+	return render(request, 'preditor/modelo_edit.html', {'form': form})
 
 
 def classe_modelo_new(request, pk):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    modelo = get_object_or_404(Modelo, pk=pk)
-    if request.method == "POST":
-        form = ClasseModeloForm(request.POST)
-        if form.is_valid():
-            classe = form.save(commit=False)
-            classe.modelo = modelo
-            classe.save()
-            return redirect('modelo_open', pk=modelo.pk)
-    else:
-        form = ClasseModeloForm()
-    return render(request, 'preditor/classe_modelo_edit.html', {'form': form, 'modelo':modelo})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = get_object_or_404(Modelo, pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
+	if request.method == "POST":
+		form = ClasseModeloForm(request.POST)
+		if form.is_valid():
+			classe = form.save(commit=False)
+			classe.modelo = modelo
+			classe.save()
+			return redirect('modelo_open', pk=modelo.pk)
+	else:
+		form = ClasseModeloForm()
+	return render(request, 'preditor/classe_modelo_edit.html', {'form': form, 'modelo':modelo})
 
 def classe_modelo_edit(request, pk):
-#    if not request.user.has_perm('aSocial.change_curso'):
-#        raise PermissionDenied
-    classe = get_object_or_404(ClasseModelo, pk=pk)
-    modelo = classe.modelo
-    if(request.method == "POST"):
-        form = ClasseModeloForm(request.POST, instance=classe)
-        if form.is_valid():
-            classe = form.save(commit=False)
-            classe.modelo = modelo
-            classe.save()           
-            return redirect('modelo_open', pk=classe.modelo.pk)
-    else:
-        form = ClasseModeloForm(instance=classe)
-    return render(request, 'preditor/classe_modelo_edit.html', {'form': form, 'modelo':classe.modelo})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	classe = get_object_or_404(ClasseModelo, pk=pk)
+	modelo = classe.modelo
+	if modelo.responsavel != request.user:
+		return redirect('modelos')
+	if(request.method == "POST"):
+		form = ClasseModeloForm(request.POST, instance=classe)
+		if form.is_valid():
+			classe = form.save(commit=False)
+			classe.modelo = modelo
+			classe.save()
+			return redirect('modelo_open', pk=classe.modelo.pk)
+	else:
+		form = ClasseModeloForm(instance=classe)
+	return render(request, 'preditor/classe_modelo_edit.html', {'form': form, 'modelo':classe.modelo})
 
 def area_modelo_new(request, pk):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    modelo = get_object_or_404(Modelo, pk=pk)
-    if request.method == "POST":
-        form = AreaModeloForm(pk, request.POST)
-        if form.is_valid():
-            area = form.save(commit=False)
-            classe = form.cleaned_data.get('Classe')
-            area.classe = classe
-            area.save()
-            return redirect('area_modelo_edit', pk=area.pk)
-    else:
-        form = AreaModeloForm(pk)
-    return render(request, 'preditor/area_modelo_edit.html', {'form': form, 'modelo':modelo})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = get_object_or_404(Modelo, pk=pk)
+	if modelo.responsavel != request.user:
+		return redirect('modelos')
+	if request.method == "POST":
+		form = AreaModeloForm(pk, request.POST)
+		if form.is_valid():
+			area = form.save(commit=False)
+			classe = form.cleaned_data.get('Classe')
+			area.classe = classe
+			area.save()
+			return redirect('area_modelo_edit', pk=area.pk)
+	else:
+		form = AreaModeloForm(pk)
+	return render(request, 'preditor/area_modelo_edit.html', {'form': form, 'modelo':modelo})
 
 def area_modelo_edit(request, pk):
-#    if not request.user.has_perm('aSocial.change_curso'):
-#        raise PermissionDenied
-    area = get_object_or_404(AreaModelo, pk=pk)
-    classe = area.classe
-    error = request.session.get('error')
-    if error == None:
-    	error = ''
-    else:
-    	del request.session['error']
-    path = os.getcwd()+'\\arquivos\\modelos\\'+area.classe.modelo.pasta+'\\masks\\'
-    mask = path+str(area.pk)+".geojson"
-    m = None
-    if(request.method == "POST"):
-        form = AreaModeloForm(area.classe.modelo.pk, request.POST, instance=area)
-        if os.path.isfile(mask):
-        	if form.is_valid():
-        		area = form.save(commit=False)
-        		classe = form.cleaned_data.get('Classe')
-        		area.classe = classe
-        		area.save()           
-        		return redirect('modelo_open', pk=area.classe.modelo.pk)
-        else:
-        	error = 'É obrigatório ter uma área demarcada'
-    else:
-        form = AreaModeloForm(area.classe.modelo.pk, instance=area, initial={'Classe': classe})
-        if os.path.isfile(mask):
-        	with open(mask) as data_file:
-        		geoms= json.loads(data_file.read())
-        	obj = geoms['features'][0]['geometry']
-        	area_m = c_area(obj)
-        	m = folium.Map(
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	area = get_object_or_404(AreaModelo, pk=pk)
+	if area.modelo.responsavel != request.user:
+		return redirect('modelos')
+	classe = area.classe
+	error = request.session.get('error')
+	if error == None:
+		error = ''
+	else:
+		del request.session['error']
+	path = os.getcwd()+'\\arquivos\\modelos\\'+area.classe.modelo.pasta+'\\masks\\'
+	mask = path+str(area.pk)+".geojson"
+	m = None
+	if(request.method == "POST"):
+		form = AreaModeloForm(area.classe.modelo.pk, request.POST, instance=area)
+		if os.path.isfile(mask):
+			if form.is_valid():
+				area = form.save(commit=False)
+				classe = form.cleaned_data.get('Classe')
+				area.classe = classe
+				area.save()
+				return redirect('modelo_open', pk=area.classe.modelo.pk)
+		else:
+			error = 'É obrigatório ter uma área demarcada'
+	else:
+		form = AreaModeloForm(area.classe.modelo.pk, instance=area, initial={'Classe': classe})
+		if os.path.isfile(mask):
+			with open(mask) as data_file:
+				geoms= json.loads(data_file.read())
+			obj = geoms['features'][0]['geometry']
+			area_m = c_area(obj)
+			m = folium.Map(
         		location=[-17.7494, -48.6202],
         		tiles="cartodbpositron",
         		zoom_start=10,
         		)
-        	folium.GeoJson(mask, name=area.descricao).add_to(m)
-        	folium.LayerControl().add_to(m)
-        	m=m._repr_html_()
-
-    return render(request, 'preditor/area_modelo_edit.html', {'form': form, 'modelo':area.classe.modelo, 'area':area, 'my_map': m, 'error':error})
+			folium.GeoJson(mask, name=area.descricao).add_to(m)
+			folium.LayerControl().add_to(m)
+			m=m._repr_html_()
+	return render(request, 'preditor/area_modelo_edit.html', {'form': form, 'modelo':area.classe.modelo, 'area':area, 'my_map': m, 'error':error})
 
 def projetos(request):
-    #if not request.user.has_perm('aSocial.list_setor'):
-    #    raise PermissionDenied
-    projetos = Projeto.objects.all()
-    return render(request, 'preditor/projetos.html', {'projetos': projetos, 
-    	#'per_edit_setor': request.user.has_perm('aSocial.change_setor'),
-    	#'per_delete_setor':request.user.has_perm('aSocial.delete_setor'),
-    	#'per_add_setor':request.user.has_perm('aSocial.add_setor')
-    	})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	projetos = Projeto.objects.filter(responsavel=request.user)
+	return render(request, 'preditor/projetos.html', {'projetos': projetos})
 
 def projeto_open(request, pk):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
-    error = request.session.get('error')
-    if error == None:
-    	error = ''
-    else:
-    	del request.session['error']
-    projeto = get_object_or_404(Projeto, pk=pk)
-    areas = Area.objects.filter(projeto=projeto)
-    path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta
-    l2 = len(path)
-    shapes = []
-    for dirpath, dirnames, filenames in os.walk(path):
-    	for file in filenames:
-    		dir = ""
-    		if (l2-len(dirpath))<0:
-    			dir = dirpath[l2-len(dirpath):]
-    		arquivo = Arquivo("","")
-    		arquivo.desc = file
-    		if (len(file) > 8):
-    			arquivo.tipo = file[-9]
-    			if (file[-8:] ==".geojson"):
-    				shapes.append(arquivo)
-    #request.session['projeto_pk'] = pk
-    #request.session['projeto_desc'] = projeto.descricao
-    #request.session.modified = True
-    return render(request, 'preditor/projeto_open.html', {'projeto':projeto, 'areas':areas, 'shapes':shapes, 'error':error})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	projeto = get_object_or_404(Projeto, pk=pk)
+	if projeto.responsavel != request.user:
+		return redirect('projetos')
+	error = request.session.get('error')
+	if error == None:
+		error = ''
+	else:
+		del request.session['error']
+	areas = Area.objects.filter(projeto=projeto)
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta
+	l2 = len(path)
+	shapes = []
+	for dirpath, dirnames, filenames in os.walk(path):
+		for file in filenames:
+			dir = ""
+			if (l2-len(dirpath))<0:
+				dir = dirpath[l2-len(dirpath):]
+			arquivo = Arquivo("","")
+			arquivo.desc = file
+			if (len(file) > 8):
+				arquivo.tipo = file[-9]
+				if (file[-8:] ==".geojson"):
+					shapes.append(arquivo)
+	return render(request, 'preditor/projeto_open.html', {'projeto':projeto, 'areas':areas, 'shapes':shapes, 'error':error})
 
 def area_open(request, pk):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
-    area = Area.objects.get(pk=pk)
-    projeto = Projeto.objects.get(pk=area.projeto.pk)
-    path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta
-    mask = path+"\\mask\\"+str(area.pk)+".geojson"
-    #calculando área m2
-    if os.path.isfile(mask):
-    	print("mask ok")
-    else:
-    	return redirect('projeto_open', pk=projeto.pk)
-    with open(mask) as data_file:
-    	geoms= json.loads(data_file.read())
-    obj = geoms['features'][0]['geometry']
-    area_m = c_area(obj)
-    ####mapa
-    m = folium.Map(
-    	location=[-17.7494, -48.6202],
-    	tiles="cartodbpositron",
-    	zoom_start=10,
-    )
-    folium.GeoJson(mask, name=area.descricao).add_to(m)
-    folium.LayerControl().add_to(m)
-    m=m._repr_html_()
-    dec = glob.glob(path+'/declividade.tif')
-    alt = glob.glob(path+'/altitude.tif')
-    repos = utils.list_repositorios()
-    return render(request, 'preditor/area_open.html', {'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	area = Area.objects.get(pk=pk)
+	projeto = area.projeto
+	if projeto.responsavel != request.user:
+		return redirect('projetos')
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta
+	mask = path+"\\mask\\"+str(area.pk)+".geojson"
+	#calculando área m2
+	if os.path.isfile(mask):
+		print("mask ok")
+	else:
+		return redirect('projeto_open', pk=projeto.pk)
+	with open(mask) as data_file:
+		geoms= json.loads(data_file.read())
+	obj = geoms['features'][0]['geometry']
+	area_m = c_area(obj)
+	####mapa
+	m = folium.Map(
+		location=[-17.7494, -48.6202],
+		tiles="cartodbpositron",
+		zoom_start=10,
+	)
+	folium.GeoJson(mask, name=area.descricao).add_to(m)
+	folium.LayerControl().add_to(m)
+	m=m._repr_html_()
+	dec = glob.glob(path+'/declividade.tif')
+	alt = glob.glob(path+'/altitude.tif')
+	repos = utils.list_repositorios()
+	return render(request, 'preditor/area_open.html', {'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
 
 def stack(request, pk, stack):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
-    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
-    area = Area.objects.get(pk=pk)
-    projeto = area.projeto
-    r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
-    repo = RepoSentinel()
-    repo.level = stack[2:4]
-    repo.data = stack[4:13]
-    repo.sat = stack[0:2]
-    path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-    l = len(path+'\\cortes')
-    cortes = []
-    for dirpath, dirnames, filenames in os.walk(path+'\\cortes'):
-    	for file in filenames:
-    		arquivo = Arquivo("","")
-    		arquivo.tipo = file[-3:]
-#    		dir = ""
-#    		if (l-len(dirpath))<0:
-#    			dir = dirpath[l-len(dirpath):]
-    		if (arquivo.tipo == "tif"):
-    			arquivo.desc = file[:-4]
-    			cortes.append(arquivo)
-    indices = []
-    if len(cortes) > 0:
-    	l = len(path+'\\indices')
-    	for dirpath, dirnames, filenames in os.walk(path+'\\indices'):
-    		for file in filenames:
-    			arquivo = Arquivo("","")
-    			arquivo.tipo = file[-3:]
-    			if (arquivo.tipo == "tif"):
-    				arquivo.desc = file
-    				indices.append(arquivo)
-    modelos = Modelo.objects.filter(responsavel=request.user)
-    modelos_treinados = ArquivoModelo.objects.filter(modelo__in=modelos)
-    return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'r_indices':r_indices, 'cortes': cortes, 'repo':repo, 'modelos_treinados':modelos_treinados })
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	area = Area.objects.get(pk=pk)
+	projeto = area.projeto
+	if projeto.responsavel != request.user:
+		return redirect('projetos')
+	r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
+	repo = RepoSentinel()
+	repo.level = stack[2:4]
+	repo.data = stack[4:13]
+	repo.sat = stack[0:2]
+	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	l = len(path+'\\cortes')
+	cortes = []
+	for dirpath, dirnames, filenames in os.walk(path+'\\cortes'):
+		for file in filenames:
+			arquivo = Arquivo("","")
+			arquivo.tipo = file[-3:]
+			if (arquivo.tipo == "tif"):
+				arquivo.desc = file[:-4]
+				cortes.append(arquivo)
+	indices = []
+	if len(cortes) > 0:
+		l = len(path+'\\indices')
+		for dirpath, dirnames, filenames in os.walk(path+'\\indices'):
+			for file in filenames:
+				arquivo = Arquivo("","")
+				arquivo.tipo = file[-3:]
+				if (arquivo.tipo == "tif"):
+					arquivo.desc = file
+					indices.append(arquivo)
+	modelos = Modelo.objects.filter(responsavel=request.user)
+	modelos_treinados = ArquivoModelo.objects.filter(modelo__in=modelos)
+	return render(request, 'preditor/stack.html', {'projeto':projeto, 'area':area, 'indices':indices, 'r_indices':r_indices, 'cortes': cortes, 'repo':repo, 'modelos_treinados':modelos_treinados })
 
 def classificar_page(request, arq_pk, area_pk, stack):
-    #if not request.user.has_perm('aSocial.delete_setor'):
-    #    raise PermissionDenied
-    #request.session['hash_progress'] = hash("ndvi"+str(timezone.now()))
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	area = Area.objects.get(pk=area_pk)
 	projeto = area.projeto
+	if projeto.responsavel != request.user:
+		return redirect('projetos')
 	modelo_treinado = ArquivoModelo.objects.get(pk=arq_pk)
 	repo = RepoSentinel()
 	repo.level = stack[2:4]
@@ -852,47 +879,51 @@ def classificar_page(request, arq_pk, area_pk, stack):
 	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
 
 def projeto_new(request):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    if request.method == "POST":
-        form = ProjetoForm(request.POST)
-        if form.is_valid():
-            projeto = form.save(commit=False)
-            projeto.responsavel = request.user
-            projeto.data_criacao = timezone.now()
-            pasta=request.POST['pasta'].replace(" ", "")
-            projeto.pasta = pasta 
-            os.mkdir('arquivos/projetos/'+pasta)
-            os.mkdir('arquivos/projetos/'+pasta+'/temp')
-            projeto.save()
-            return redirect('projeto_open', pk=projeto.pk)
-    else:
-        form = ProjetoForm()
-    return render(request, 'preditor/projeto_edit.html', {'form': form})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	if request.method == "POST":
+		form = ProjetoForm(request.POST)
+		if form.is_valid():
+			projeto = form.save(commit=False)
+			projeto.responsavel = request.user
+			projeto.data_criacao = timezone.now()
+			pasta=secrets.token_hex(nbytes=6)
+			projeto.pasta = pasta
+			os.mkdir('arquivos/projetos/'+pasta)
+			os.mkdir('arquivos/projetos/'+pasta+'/temp')
+			projeto.save()
+			return redirect('projeto_open', pk=projeto.pk)
+	else:
+		form = ProjetoForm()
+	return render(request, 'preditor/projeto_edit.html', {'form': form})
 
 def area_new(request, pk):
-    #if not request.user.has_perm('aSocial.add_setor'):
-    #    raise PermissionDenied
-    projeto = get_object_or_404(Projeto, pk=pk)
-    if request.method == "POST":
-        form = AreaForm(request.POST)
-        if form.is_valid():
-            area = form.save(commit=False)
-            area.responsavel = request.user
-            area.data_criacao = timezone.now()
-            area.projeto = projeto
-            pasta=request.POST['pasta'].replace(" ", "") 
-            area.pasta = pasta
-            os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta)
-            os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta+'/temp')
-            os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta+'/mask')
-            area.save()
-            return redirect('/projeto/'+str(projeto.pk)+"/")
-    else:
-        form = AreaForm()
-    return render(request, 'preditor/area_edit.html', {'form': form, 'projeto': projeto})
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	projeto = get_object_or_404(Projeto, pk=pk)
+	if projeto.responsavel != request.user:
+		return redirect('projetos')
+	if request.method == "POST":
+		form = AreaForm(request.POST)
+		if form.is_valid():
+			area = form.save(commit=False)
+			area.responsavel = request.user
+			area.data_criacao = timezone.now()
+			area.projeto = projeto
+			pasta=secrets.token_hex(nbytes=6)
+			area.pasta = pasta
+			os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta)
+			os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta+'/temp')
+			os.mkdir('arquivos/projetos/'+projeto.pasta+'/'+pasta+'/mask')
+			area.save()
+			return redirect('/projeto/'+str(projeto.pk)+"/")
+	else:
+		form = AreaForm()
+	return render(request, 'preditor/area_edit.html', {'form': form, 'projeto': projeto})
 
 def draw(request):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	m = folium.Map(
 		location=[-14.7494, -48.6202],
 		tiles="cartodbpositron",
@@ -913,6 +944,8 @@ def draw(request):
 	return render(request, 'preditor/draw.html', {'my_map': m})
 
 def download_page(request):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
 	repos = utils.list_repositorios()
 	return render(request, 'preditor/download_page.html', {'repos':repos})
 
@@ -920,7 +953,9 @@ def trescores_page(request):
 	return render(request, 'preditor/trescores_page.html', {})
 
 def progressos(request):
-	progressos = BarraProgresso.objects.filter(data_finalizacao__isnull=True).order_by('-data_criacao')
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	progressos = BarraProgresso.objects.filter(usuario=request.user, data_finalizacao__isnull=True).order_by('-data_criacao')
 	return render(request, 'preditor/progressos.html', {'progressos' : progressos})
 
 def ndvi_page(request):
@@ -928,7 +963,7 @@ def ndvi_page(request):
 	return render(request, 'preditor/ndvi_page.html', {})
 
 def user(request):
-    return render(request, 'aSocial/user.html', {})
+    return render(request, 'preditor/user.html', {})
 
 
 
@@ -1364,41 +1399,60 @@ def altitude(request,pk):
 	
 	return render(request, 'preditor/mapa.html', {'my_map': m, 'area':area})
 
-def download_sentinel(request):
-	projeto = get_object_or_404(Projeto, pk=request.session.get('projeto_pk'))
+def preparar_download_sentinel(request):
 	data_ini = request.POST['data_ini']
 	data_fim = request.POST['data_fim']
-	
+	sat = request.POST['satelite']
+	d_ini = ''.join(filter(lambda i: i not in "-", data_ini))
+	d_fim = ''.join(filter(lambda i: i not in "-", data_fim))
+	mask = request.FILES['mask']
+	name = secrets.token_hex(nbytes=4)
+	with default_storage.open(name+'.geojson', 'wb+') as destination:
+		for chunk in mask.chunks():
+			destination.write(chunk)
+	api = SentinelAPI('juanmorysson', 'Blow642Sock095#', 'https://scihub.copernicus.eu/dhus')
+	footprint = geojson_to_wkt(read_geojson('arquivos/'+name+'.geojson'))
+	products = api.query(footprint,
+						 platformname='Sentinel-2',
+						 producttype=sat,
+						 #cloudcoverpercentage=(0, 30),
+						 date=(d_ini, d_fim))
+	products_df = api.to_dataframe(products)
+	prds = products_df.loc[:,"title"]
+	return render(request, 'preditor/download_page.html', {'mask':mask,'data_ini': data_ini, 'data_fim': data_fim,'satelite':sat, 'prds':prds})
+
+def download_sentinel(request):
+	data_ini = request.POST['data_ini']
+	data_fim = request.POST['data_fim']
+	sat = request.POST['satelite']
 	data_ini = ''.join(filter(lambda i: i not in "-", data_ini))
 	data_fim = ''.join(filter(lambda i: i not in "-", data_fim))
-	
+	mask = request.FILES['mask']
+	name = secrets.token_hex(nbytes=4)
+	with default_storage.open(name+'.geojson', 'wb+') as destination:
+		for chunk in mask.chunks():
+			destination.write(chunk)
 	api = SentinelAPI('juanmorysson', 'Blow642Sock095#', 'https://scihub.copernicus.eu/dhus')
+	footprint = geojson_to_wkt(read_geojson('arquivos/'+name+'.geojson'))
+	products = api.query(footprint,
+						 platformname='Sentinel-2',
+						 producttype=sat,
+						 #cloudcoverpercentage=(0, 30),
+						 date=(data_ini, data_fim))
+	'''
 	tiles = ['22KGF',]
-
 	query_kwargs = {
         'platformname': 'Sentinel-2',
         'producttype': 'S2MSI1C',
         'date': (data_ini, data_fim)}
-	'''
-	https://scihub.copernicus.eu/twiki/do/view/SciHubUserGuide/FullTextSearch?redirectedfrom=SciHubUserGuide.3FullTextSearch
-    Sentinel-1: SLC, GRD, OCN
-    Sentinel-2: S2MSI2A,S2MSI1C, S2MS2Ap
-    Sentinel-3: SR_1_SRA___, SR_1_SRA_A, SR_1_SRA_BS, SR_2_LAN___, OL_1_EFR___, OL_1_ERR___, OL_2_LFR___, OL_2_LRR___, SL_1_RBT___, SL_2_LST___, SY_2_SYN___, SY_2_V10___, SY_2_VG1___, SY_2_VGP___.
-    Sentinel-5P: L1B_IR_SIR, L1B_IR_UVN, L1B_RA_BD1, L1B_RA_BD2, L1B_RA_BD3, L1B_RA_BD4, L1B_RA_BD5, L1B_RA_BD6, L1B_RA_BD7, L1B_RA_BD8, L2__AER_AI, L2__AER_LH, L2__CH4, L2__CLOUD_, L2__CO____, L2__HCHO__, L2__NO2___, L2__NP_BD3, L2__NP_BD6, L2__NP_BD7, L2__O3_TCL, L2__O3____, L2__SO2___. 
-	'''
-   
-#'date': ('NOW-14DAYS', 'NOW')}
-
-	print(data_ini)
+	#'date': ('NOW-14DAYS', 'NOW')}
 	products = OrderedDict()
 	for tile in tiles:
 	    kw = query_kwargs.copy()
 	    kw['tileid'] = tile
 	    pp = api.query(**kw)
 	    products.update(pp)
-
-	#print(products)
-
+	'''
 	api.download_all(products, directory_path='repositorio/sentinel/')
 	print("XXXXXXXXXXX Inciando unzip")
 	#unzip downloads

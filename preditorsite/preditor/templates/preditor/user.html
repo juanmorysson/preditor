@@ -1,0 +1,30 @@
+{% extends 'preditor/main.html' %}
+{% block content %}
+
+    <div class="post">
+        <img
+                    src="{{ user.socialaccount_set.all.0.get_avatar_url }}"
+                    alt="user"
+                    class="profile-pic me-2"
+                  />
+        <br> Nome: {{ user.first_name }} {{ user.last_name }}
+        <br> Email: {{ user.email }}
+        <br> Login: {{ user.username }}
+        <br> Data Criação: {{ user.date_joined }}
+        <br>
+                <a href="{% url 'logout'%}"
+                    class="
+                    nav-link
+
+                    text-muted
+                    waves-effect waves-dark"
+                    id="navbarDropdown"
+                    role="button"
+                    aria-expanded="false">
+
+                  logout <i class="mdi mdi-power"  /></i> </a>
+
+
+    </div>
+
+{% endblock %}
