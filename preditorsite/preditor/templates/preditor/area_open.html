@@ -87,18 +87,49 @@
 				</div>
             </div>
         </div>
-        <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Índices por data de Imagem (Stacks) </h3>
-        	<div class="col-sm-12">
+        <div class="row">
+        	<h3 class="card-title mb-0 p-10"> Gerar Índices (Stacks) </h3>
+        	<div class="col-sm-8">
+				<h3 class="card-title mb-0 p-10"> Por imagens Sentinel </h3>
             	<div class="card">
                 	<div class="card-body">
-                		Selecionar data:
+						<div class="row">
+							<div class="col-sm-8">
+                				Sentinel: Selecionar data:
+							</div>
+							<div class="col-sm-4" align="right">
+								<form method="POST">
+									{% csrf_token %}
+										<input type="hidden" name="mask_hidden" value="{{mask}}">
+									<button type="submit" formaction="/download_page" class="btn btn-secondary">
+										Download
+									</button>
+								</form>
+							</div>
+						</div>
                 		<table class="table user-table table-hover">
+							<thead>
+							  <tr>
+							   <th class="border-top-0">Level</th>
+							   <th class="border-top-0">Data</th>
+							   <th class="border-top-0">Tile</th>
+							   <th class="border-top-0">Sat</th>
+							  </tr>
+							</thead>
 								<tbody id="body_edital">
 									{% for repo in repos %}
 										<tr onclick="window.location='../../stack/{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}';">
 											<td>
-												{{repo}} 
+												{{repo.level}}
+											</td>
+											<td>
+												{{repo.data_format}}
+											</td>
+											<td>
+												{{repo.tile}}
+											</td>
+											<td>
+												{{repo.sat}}
 											</td>
 										</tr>
 									{% endfor %}
@@ -107,7 +138,6 @@
 					</div>
 				</div> 
             </div>
-            
         </div>
 
     </div>

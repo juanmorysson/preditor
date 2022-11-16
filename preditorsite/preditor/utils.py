@@ -12,6 +12,7 @@ import json
 import zipfile
 from osgeo import gdal
 import rasterio
+from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
 
 SEQ_COLOR_DEFAULT = [
 	(255, 0, 0, 255),
@@ -97,7 +98,7 @@ def convertToWGS84(src):
 	
 	return [bounds_fin, centre_lon, centre_lat]
 
-def list_repositorios(stack_marked = ''):
+def list_repositorios(stack_marked = '', tile = None):
 	print(stack_marked)
 	pathRepositorio = os.getcwd()+'\\repositorio\\sentinel'
 	repos = []
@@ -108,10 +109,16 @@ def list_repositorios(stack_marked = ''):
 			repo = RepoSentinel()
 			repo.level = item[8:10]
 			repo.data = item[11:19]
+			repo.data_format = item[11:15] + '-'+item[15:17]+'-'+item[17:19]
 			repo.sat = item[1:3]
+			repo.tile = item[20:26]
 			if stack_marked == repo.sat+repo.level+repo.data:
 				repo.marked = True
-			repos.append(repo)
+			if tile==None:
+				repos.append(repo)
+			else:
+				if repo.tile == tile:
+					repos.append(repo)
 
 	return repos
 
@@ -267,3 +274,21 @@ def path_repositorio(level, data):
 				if (data == item[11:19]):
 					path_input = os.getcwd()+'/repositorio/sentinel/'+item
 	return path_input
+
+def verificar_tile_mask(path_mask):
+	api = SentinelAPI('juanmorysson', 'Blow642Sock095#', 'https://scihub.copernicus.eu/dhus')
+	footprint = geojson_to_wkt(read_geojson(path_mask))
+	products = api.query(footprint,
+						 platformname='Sentinel-2',
+						 producttype='S2MSI2A',
+						 date=('20221106', '20221112'))
+	products_df = api.to_dataframe(products)
+	prds = products_df.loc[:,"title"]
+	tiles = []
+	for p in prds:
+		tile = p[20:26]
+		if tiles.__contains__(tile):
+			print("")
+		else:
+			tiles.append(tile)
+	return tiles

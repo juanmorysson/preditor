@@ -690,7 +690,7 @@ def area_modelo_edit(request, pk):
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
 	area = get_object_or_404(AreaModelo, pk=pk)
-	if area.modelo.responsavel != request.user:
+	if area.classe.modelo.responsavel != request.user:
 		return redirect('modelos')
 	classe = area.classe
 	error = request.session.get('error')
@@ -792,8 +792,12 @@ def area_open(request, pk):
 	m=m._repr_html_()
 	dec = glob.glob(path+'/declividade.tif')
 	alt = glob.glob(path+'/altitude.tif')
-	repos = utils.list_repositorios()
-	return render(request, 'preditor/area_open.html', {'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
+	tiles = utils.verificar_tile_mask(mask)
+	if len(tiles) == 1:
+		repos = utils.list_repositorios(tile = tiles[0])
+	else:
+		repos = utils.list_repositorios()
+	return render(request, 'preditor/area_open.html', {'tiles':tiles, 'mask':mask, 'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
 
 def stack(request, pk, stack):
 	if not request.user.is_authenticated:
@@ -947,7 +951,32 @@ def download_page(request):
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
 	repos = utils.list_repositorios()
-	return render(request, 'preditor/download_page.html', {'repos':repos})
+	mask = None
+	area_m = None
+	m = None
+	if request.method == "POST":
+		mask_hidden = request.POST['mask_hidden']
+		if mask_hidden:
+			mask = mask_hidden
+			# calculando área m2
+			if os.path.isfile(mask):
+				print("mask ok")
+			else:
+				return redirect('download_page')
+			with open(mask) as data_file:
+				geoms = json.loads(data_file.read())
+			obj = geoms['features'][0]['geometry']
+			area_m = c_area(obj)
+			####mapa
+			m = folium.Map(
+				location=[-17.7494, -48.6202],
+				tiles="cartodbpositron",
+				zoom_start=10,
+			)
+			folium.GeoJson(mask, name="area corte").add_to(m)
+			folium.LayerControl().add_to(m)
+			m = m._repr_html_()
+	return render(request, 'preditor/download_page.html', {'mask': mask, 'area_m': area_m, 'my_map': m, 'repos':repos})
 
 def trescores_page(request):
 	return render(request, 'preditor/trescores_page.html', {})
@@ -1036,6 +1065,50 @@ def uploadMaskModelo(request, pk):
 			destination.write(chunk)
 	return redirect('/area_modelo/'+str(area.pk))
 
+def upload_modelo(request):
+	return render(request, 'preditor/upload_modelo.html', {})
+def upload_modelo_save(request):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	if request.POST['nome_modelo'] == "":
+		return render(request, 'preditor/upload_modelo.html', {})
+	modelo = Modelo()
+	modelo.descricao = request.POST['nome_modelo']
+	modelo.responsavel = request.user
+	modelo.data_criacao = timezone.now()
+	pasta = secrets.token_hex(nbytes=6)
+	os.mkdir('arquivos/modelos/' + pasta)
+	modelo.pasta=pasta
+	modelo.upload = True
+	modelo.save()
+	for k, v in request.POST.lists():
+		if k[:4] == 'cor_':
+			classe = ClasseModelo()
+			classe.modelo = modelo
+			classe.cor = v[0]
+			classe.classe = k[4:]
+			classe.save()
+	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	if os.path.isdir(path_model):
+		print("path Já Criado")
+	else:
+		os.mkdir(path_model)
+	print("Salvando arquivo")
+	# salvar treinamento
+	arq_modelo = ArquivoModelo()
+	arq_modelo.modelo = modelo
+	arq_modelo.save()
+	#tipo = request.POST['tipo']
+	filename = str(arq_modelo.id) + '.sav'
+	joblib.dump(modelo, path_model + filename)
+	return redirect('modelos')
+def uploadArquivoModelo(request):
+	if (request.FILES.get('modelo', False)==False):
+		request.session['error']='Adicione um arquivo .sav!'
+		return redirect('/upload_modelo')
+	arquivo = request.FILES['modelo']
+	modelo = ia.ler_modelo_up(arquivo)
+	return render(request, 'preditor/upload_modelo.html', {'modelo':modelo})
 def uploadPointsModelo(request, pk):
 	area = AreaModelo.objects.get(pk=pk)
 	modelo = area.classe.modelo
@@ -1405,13 +1478,18 @@ def preparar_download_sentinel(request):
 	sat = request.POST['satelite']
 	d_ini = ''.join(filter(lambda i: i not in "-", data_ini))
 	d_fim = ''.join(filter(lambda i: i not in "-", data_fim))
-	mask = request.FILES['mask']
-	name = secrets.token_hex(nbytes=4)
-	with default_storage.open(name+'.geojson', 'wb+') as destination:
-		for chunk in mask.chunks():
-			destination.write(chunk)
+	mask_hidden = request.POST['mask_hidden']
+	if mask_hidden:
+		path_mask = mask_hidden
+	else:
+		mask = request.FILES['mask']
+		name = secrets.token_hex(nbytes=4)
+		with default_storage.open(name + '.geojson', 'wb+') as destination:
+			for chunk in mask.chunks():
+				destination.write(chunk)
+		path_mask = 'arquivos/' + name + '.geojson'
 	api = SentinelAPI('juanmorysson', 'Blow642Sock095#', 'https://scihub.copernicus.eu/dhus')
-	footprint = geojson_to_wkt(read_geojson('arquivos/'+name+'.geojson'))
+	footprint = geojson_to_wkt(read_geojson(path_mask))
 	products = api.query(footprint,
 						 platformname='Sentinel-2',
 						 producttype=sat,
@@ -1419,7 +1497,27 @@ def preparar_download_sentinel(request):
 						 date=(d_ini, d_fim))
 	products_df = api.to_dataframe(products)
 	prds = products_df.loc[:,"title"]
-	return render(request, 'preditor/download_page.html', {'mask':mask,'data_ini': data_ini, 'data_fim': data_fim,'satelite':sat, 'prds':prds})
+
+	mask = path_mask
+	# calculando área m2
+	if os.path.isfile(mask):
+		print("mask ok")
+	else:
+		return redirect('download_page')
+	with open(mask) as data_file:
+		geoms = json.loads(data_file.read())
+	obj = geoms['features'][0]['geometry']
+	area_m = c_area(obj)
+	####mapa
+	m = folium.Map(
+		location=[-17.7494, -48.6202],
+		tiles="cartodbpositron",
+		zoom_start=10,
+	)
+	folium.GeoJson(mask, name="area corte").add_to(m)
+	folium.LayerControl().add_to(m)
+	m = m._repr_html_()
+	return render(request, 'preditor/download_page.html', {'mask':mask,'area_m':area_m, 'my_map': m,'data_ini': data_ini, 'data_fim': data_fim,'satelite':sat, 'prds':prds})
 
 def download_sentinel(request):
 	data_ini = request.POST['data_ini']
@@ -1427,13 +1525,18 @@ def download_sentinel(request):
 	sat = request.POST['satelite']
 	data_ini = ''.join(filter(lambda i: i not in "-", data_ini))
 	data_fim = ''.join(filter(lambda i: i not in "-", data_fim))
-	mask = request.FILES['mask']
-	name = secrets.token_hex(nbytes=4)
-	with default_storage.open(name+'.geojson', 'wb+') as destination:
-		for chunk in mask.chunks():
-			destination.write(chunk)
+	mask_hidden = request.POST['mask_hidden']
+	if mask_hidden:
+		path_mask = mask_hidden
+	else:
+		mask = request.FILES['mask']
+		name = secrets.token_hex(nbytes=4)
+		with default_storage.open(name+'.geojson', 'wb+') as destination:
+			for chunk in mask.chunks():
+				destination.write(chunk)
+		path_mask = 'arquivos/'+name+'.geojson'
 	api = SentinelAPI('juanmorysson', 'Blow642Sock095#', 'https://scihub.copernicus.eu/dhus')
-	footprint = geojson_to_wkt(read_geojson('arquivos/'+name+'.geojson'))
+	footprint = geojson_to_wkt(read_geojson(path_mask))
 	products = api.query(footprint,
 						 platformname='Sentinel-2',
 						 producttype=sat,

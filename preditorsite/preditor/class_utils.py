@@ -13,8 +13,10 @@ class Arquivo():
 
 class RepoSentinel():
 	data = ""
+	data_format = ""
 	level = ""
 	sat = ""
+	tile = ""
 	marked = False
 
 	def __str__(self):

@@ -80,8 +80,9 @@
                             <div class="col-sm">
                                 Máscara (Shape) Área de Interesse:
                                 <div class="col-sm">
-                                    <input type="file" name="mask" value="{{mask}}" accept=".geojson">
+                                    <input type="file" name="mask"  accept=".geojson">
 			                    </div>
+                                    <input type="hidden" name="mask_hidden" value="{{mask}}">
                                 <div class="error-msg">
                                     {{ error }}
                                 </div>
@@ -93,8 +94,17 @@
                             <button type="submit" formaction="/download" class="btn btn-secondary">
                                 Download
                             </button>
-
                         </form>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <p class="col-sm-12">
+                    {{ my_map|safe }}
+                    </p>
+                </div>
+                <div class="card-body">
+                    {{ area_m }} m²
                 </div>
             </div>
         </div>

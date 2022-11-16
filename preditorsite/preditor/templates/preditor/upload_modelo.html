@@ -1,0 +1,62 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Upload de Modelo Treinado</h3>
+        </div>
+           <div class="card">
+                <div class="card-body">
+                    Modelo:
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="col-sm">
+                            <input type="file" name="modelo" accept=".sav">
+                        </div>
+                        <div class="error-msg">
+                            {{ error }}
+                        </div>
+                        <button type="submit" formaction="/uploadArquivoModelo" class="btn btn-secondary">
+                            Up modelo
+                        </button>
+                    </form>
+                </div>
+            </div>
+    </div>
+</div>
+<div class="container-fluid">
+    {% if modelo %}
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" class="form-horizontal" enctype="multipart/form-data">
+                    {% csrf_token %}
+                        <p>
+                            Modelo tipo: {{modelo}}
+                            <br> Nº de Variáveis: {{modelo.n_features_in_}}
+                        </p>
+                        <div class="col-sm">
+                            Nome do Modelo:
+                            <input type="text" name="nome_modelo" class="form-control">
+                        </div>
+                    	{% for classe in modelo.classes_ %}
+                            <div class="col-sm">
+                                Cor da Classe {{classe}}:
+                                <input type="hidden" name="{{classe}}" value="{{classe}}">
+                                <input type="color" name="cor_{{classe}}" class="form-control">
+                            </div>
+                        {% endfor %}
+                    	<button type="submit" class="btn btn-success" formaction="/upload_modelo/save">Salvar</button>
+                    </form>
+				</div> 
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+

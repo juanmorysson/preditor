@@ -10,6 +10,7 @@ class Modelo(models.Model):
     data_criacao =  models.DateTimeField(null=True,blank=True)
     stack = models.CharField(max_length=200, null=True)
     percent = models.CharField(max_length=3, null=True)
+    upload = models.BooleanField(default=False)
 
     def __str__(self):
         return self.descricao
@@ -21,7 +22,7 @@ class TipoArquivoModelo(models.Model):
     def __str__(self):
         return self.descricao
 class ArquivoModelo(models.Model):
-    tipo = models.ForeignKey(TipoArquivoModelo, on_delete=models.CASCADE, null=False)
+    tipo = models.ForeignKey(TipoArquivoModelo, on_delete=models.CASCADE, null=True)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
     data_treinamento = models.DateTimeField(null=True, blank=True)
     loop_cross = models.CharField(max_length=20, null=True)

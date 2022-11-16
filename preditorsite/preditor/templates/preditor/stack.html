@@ -86,7 +86,20 @@
 				<div class="col-sm-12">
 					<div class="card">
 						<div class="card-body">
-							Escolha o modelo:
+							<div class="row">
+							<div class="col-sm-8">
+                				Escolha o modelo:
+							</div>
+							<div class="col-sm-4" align="right">
+								<form method="POST">
+									{% csrf_token %}
+										<input type="hidden" name="mask_hidden" value="{{mask}}">
+									<button type="submit" formaction="/upload_modelo" class="btn btn-secondary">
+										Upload Modelo Treinado
+									</button>
+								</form>
+							</div>
+						</div>
 							<table class="table user-table table-hover">
 									<tbody>
 										<tr>

@@ -30,6 +30,7 @@
                     </a>
 				</div> 
             </div>
+			{% if not modelo.upload %}
     		<h3 class="card-title mb-0 p-10"> Áreas Classificadas (Passo 2) </h3>
         	<div class="card">
             	<div class="card-body">
@@ -67,16 +68,20 @@
 							</tbody>
 						</table>
 				</div>
-			</div> 
+
+			</div>
+			{% endif %}
         </div>
         <div class="col-sm-4">
         	<h3 class="card-title mb-0 p-10"> Classificação do Modelo (Passo 1)</h3>
         	<div class="col-sm-12">
             	<div class="card">
                 	<div class="card-body">
+						{% if not modelo.upload %}
                 		<a href="/classe_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
 		        		Nova Classe
 		        		</a>
+						{% endif %}
                 		<table class="table user-table table-hover">
 							<tbody id="body_edital">
 								{% for classe in classes %}
@@ -96,23 +101,38 @@
             </div>
         </div>
     </div>
+	{% if not modelo.upload %}
 	<form method="POST" enctype="multipart/form-data">
 			                            {% csrf_token %}
     <div class="row">
         <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Gerar Stack (Escolher Variáveis do Modelo ) </h3>
+        	<h3 class="card-title mb-0 p-10"> Imagens para o Modelo (Escolher Variáveis do Modelo ) </h3>
         </div>
 
     	<div class="col-sm-5">
         	<div class="card">
             	<div class="card-body">
-            		Selecionar data:
+            		Sentinel: selecionar data:
             		<table class="table user-table table-hover">
+						<thead>
+                          <tr>
+                           <th class="border-top-0">Level</th>
+                           <th class="border-top-0">Data</th>
+							  <th class="border-top-0">Tile</th>
+							  <th class="border-top-0"></th>
+                          </tr>
+                        </thead>
 						<tbody id="body_edital">
 							{% for repo in repos %}
 								<tr>
 									<td>
-										{{repo}} 
+										{{repo.level}}
+									</td>
+									<td>
+										{{repo.data_format}}
+									</td>
+									<td>
+										{{repo.tile}}
 									</td>
 									<td>
 										<input type="checkbox" name="repo_{{repo.sat}}{{repo.level}}{{repo.data}}"
@@ -376,6 +396,54 @@
 				</div>
 			</div>
 		</div>
+		{% else %}
+		<div class="row">
+		<div class="col-sm-12">
+			<h3 class="card-title mb-0 p-10"> Modelo </h3>
+		</div>
+        <div class="col-sm-12">
+        	<div class="card">
+            	<div class="card-body">
+						<table class="table user-table table-hover">
+							<thead>
+								<tr>
+									<th>
+										Modelo
+									</th>
+									<th>
+										Data Criação
+									</th>
+									<th>
+
+									</th>
+
+								</tr>
+							</thead>
+							<tbody>
+								{% for model in models %}
+									<tr >
+										<td>
+											{{model.modelo.descricao}}
+										</td>
+										<td>
+											{{model.modelo.data_criacao}}
+										</td>
+										<td>
+											<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
+												Download
+											</a>
+										</td>
+									</tr>
+								{% endfor %}
+							</thead>
+						</table>
+					</form>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+
 	</div>
 </div>
 

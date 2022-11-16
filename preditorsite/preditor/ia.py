@@ -64,6 +64,18 @@ def ler_modelo_arquivo(arq):
 		#print(model.coefs_)
 	return model
 
+def ler_modelo_up(file):
+	model = joblib.load(file)
+	print(model.classes_)
+	print(model.n_features_in_)
+	# print(model)
+	if str(model) == "SVC()":
+		print("SVM")
+	if str(model)[:22] == "RandomForestClassifier":
+		print("RF")
+	return model
+
+# print(model.coefs_)
 #testar
 	#result = loaded_model.score(X_test, Y_test)
 

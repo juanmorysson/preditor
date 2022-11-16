@@ -9,11 +9,15 @@
         </div>
         <div class="col-md-6 col-4 align-self-center">
 	      	<div class="text-end upgrade-btn">
-		        <a
-		          href="/modelo/new"
-		          class="btn btn-primary"         
-		          >Novo</a
-		        >
+		        <a href="/modelo/new"
+		          class="btn btn-primary">
+					Novo
+				</a>
+				<a href="/upload_modelo"
+		          class="btn btn-primary">
+					Upload Modelo Treinado
+				</a>
+
 		    </div>
     	</div>
     </div>
@@ -32,6 +36,7 @@
 				   <th class="border-top-0">Pasta</th>
 				   <th class="border-top-0">Data Criação</th>
 				   <th class="border-top-0">Responsavel</th>
+			       <th class="border-top-0">Externo (upload)</th>
 				  </tr>
 				</thead>
 				<tbody id="body_edital">
@@ -41,6 +46,7 @@
 							<td>{{modelo.pasta}}</td>
 							<td>{{modelo.data_criacao}}</td>
 							<td>{{modelo.responsavel}}</td>
+							<td>{{modelo.upload}}</td>
 						</tr>
 					{% endfor %}
 				</tbody>

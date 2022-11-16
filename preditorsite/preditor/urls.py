@@ -35,6 +35,9 @@ urlpatterns = [
     path('modelo/testar/<int:pk>', views.testar, name='testar'),
     path('modelo/excluir_arquivo/<int:pk>', views.excluir_arquivo, name='excluir_arquivo'),
 
+    path('upload_modelo', views.upload_modelo, name='upload_modelo'),
+    path('upload_modelo/save', views.upload_modelo_save, name='upload_modelo_save'),
+    path('uploadArquivoModelo', views.uploadArquivoModelo, name='uploadArquivoModelo'),
 
     path('classe_modelo/new/<int:pk>/', views.classe_modelo_new, name='classe_modelo_new'),
     path('classe_modelo/<int:pk>/', views.classe_modelo_edit, name='classe_modelo_edit'),
