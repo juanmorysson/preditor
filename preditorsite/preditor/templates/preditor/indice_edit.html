@@ -27,7 +27,7 @@
         <p style="color:green;">{{sucesso}}</p>
 		<button type="submit" class="btn btn-success" formaction="{{action}}">Salvar</button>
         <button type="submit" class="btn btn-success" formaction="testarFormula">Testar</button>
-        <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}">
+        <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}/{{sensor}}">
             Visualizar
         </a>
         <a href="/indices" class="btn btn-success">
@@ -71,10 +71,12 @@
                         <div class="col-sm-3">
                             <p>
                                 Lista de Rasters:<br>
-                                {% for r in rasters %}
-                                    <br><b style="color: blue;"> {{r.tagOnSat}} </b> - {{r.band}}
+                                {% for s, l in list_rasters %}
+                                    <br><b style="color: green;"> {{s.descricao}} </b>
+                                    {% for r in l %}
+                                        <br><b style="color: blue;"> {{r.tagOnSat}} </b> - {{r.band}}
+                                    {% endfor %}
                                 {% endfor %}
-
                             </p>
                         </div>
                     </div>

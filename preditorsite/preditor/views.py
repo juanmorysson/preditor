@@ -1,7 +1,9 @@
 import pandas as pd
+import locale
 from django.shortcuts import render, get_object_or_404
 from django.core import serializers
 from django.utils import timezone
+from datetime import datetime, timedelta
 from .class_utils import *
 from .models import *
 from .forms import *
@@ -77,14 +79,14 @@ def indice_new(request):
 		return redirect('accounts/login')
 	erro = ""
 	if request.method == "POST":
-	    form = IndiceForm(request.POST)
+	    form = IndiceForm(request.user, request.POST)
 	    if form.is_valid():
 	        i = form.save(commit=False)
 	        i.responsavel = request.user
 	        i.isIndex = True
-	        x = erroFormula(i.formula)
+	        x = erroFormula(request.user, i.satelite, i.formula)
 	        if x==False:
-	        	if testeFormula(i.formula, i.tag):
+	        	if testeFormula(i.satelite, i.formula, i.tag):
 	        		i.save()
 	        		return redirect('indices')
 	        	else:
@@ -92,9 +94,25 @@ def indice_new(request):
 	        else:
 	        	erro = x
 	else:
-	    form = IndiceForm()
-	rasters = RasterBand.objects.all()
-	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro':erro})
+	    form = IndiceForm(request.user)
+	rasters = Raster.objects.filter(isIndex=False, publica=True)
+	rasters = list(rasters)
+	r_resp = Raster.objects.filter(responsavel=request.user)
+	for r in r_resp:
+		rasters.append(r)
+	list_sat = []
+	list_rasters = []
+	for rr in rasters:
+		if list_sat.__contains__(rr.satelite):
+			print("")
+		else:
+			list_r = []
+			for rrr in rasters:
+				if rrr.satelite == rr.satelite:
+					list_r.append(rrr)
+			list_sat.append(rr.satelite)
+			list_rasters.append((rr.satelite, list_r))
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'list_rasters':list_rasters, 'erro':erro})
 
 def indice_edit(request, pk):
 	if not request.user.is_authenticated:
@@ -102,12 +120,12 @@ def indice_edit(request, pk):
 	i = Raster.objects.get(pk=pk)
 	erro = ""
 	if request.method == "POST":
-	    form = IndiceForm(request.POST, instance=i)
+	    form = IndiceForm(request.user, request.POST, instance=i)
 	    if form.is_valid():
 	        i = form.save(commit=False)
-	        x = erroFormula(i.formula)
+	        x = erroFormula(request.user, i.satelite, i.formula)
 	        if x == False:
-	        	if testeFormula(i.formula, i.tag):
+	        	if testeFormula(i.satelite, i.formula, i.tag):
 	        		i.save()
 	        		return redirect('indices')
 	        	else:
@@ -115,9 +133,25 @@ def indice_edit(request, pk):
 	        else:
 	        	erro = x
 	else:
-	    form = IndiceForm(instance=i)
-	rasters = RasterBand.objects.all()
-	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'erro': erro})
+	    form = IndiceForm(request.user, instance=i)
+	rasters = Raster.objects.filter(isIndex=False, publica=True)
+	rasters = list(rasters)
+	r_resp = Raster.objects.filter(responsavel=request.user)
+	for r in r_resp:
+		rasters.append(r)
+	list_sat = []
+	list_rasters = []
+	for rr in rasters:
+		if list_sat.__contains__(rr.satelite):
+			print("")
+		else:
+			list_r = []
+			for rrr in rasters:
+				if rrr.satelite == rr.satelite:
+					list_r.append(rrr)
+			list_sat.append(rr.satelite)
+			list_rasters.append((rr.satelite, list_r))
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters,'list_rasters':list_rasters, 'erro': erro})
 
 def indice_testarFormula(request, pk=0):
 	if not request.user.is_authenticated:
@@ -125,36 +159,48 @@ def indice_testarFormula(request, pk=0):
 	erro = ""
 	sucesso = ""
 	action = 'new'
+	sensor = ""
 	if pk!=0:
 		i = Raster.objects.get(pk=pk)
 		action = 'edit'
 	if request.method == "POST":
-		form = IndiceForm(request.POST)
+		form = IndiceForm(request.user, request.POST)
 		if pk != 0:
-			form = IndiceForm(request.POST, instance=i)
+			form = IndiceForm(request.user, request.POST, instance=i)
 		if form.is_valid():
 			i = form.save(commit=False)
-			x = erroFormula(i.formula)
+			sensor = i.satelite
+			x = erroFormula(request.user, i.satelite, i.formula)
 			if x == False:
-				if testeFormula(i.formula, i.tag):
+				if testeFormula(i.satelite, i.formula, i.tag):
 					sucesso = "Fómula validada!"
 				else:
 					erro = "A fórmula não executou"
 			else:
 				erro = x
 	else:
-		form = IndiceForm(instance=i)
-	rasters = RasterBand.objects.all()
-	return render(request, 'preditor/indice_edit.html', {'form': form, 'rasters':rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
-def testeFormula(formula, tag):
-	level = "1C"
-	path = os.getcwd() + '\\arquivos\\testes\\'+level
-	src_ref = rasterio.open(path + '\\cortes\\B04.tif')
-	s = "Sentinel" + level
-	sats = Satelite.objects.filter(descricao=s)
-	sat = None
-	for s in sats:
-		sat = s
+		form = IndiceForm(request.user,instance=i)
+	rasters = Raster.objects.filter(isIndex=False, publica=True)
+	rasters = list(rasters)
+	r_resp = Raster.objects.filter(responsavel=request.user)
+	for r in r_resp:
+		rasters.append(r)
+	list_sat = []
+	list_rasters = []
+	for rr in rasters:
+		if list_sat.__contains__(rr.satelite):
+			print("")
+		else:
+			list_r = []
+			for rrr in rasters:
+				if rrr.satelite == rr.satelite:
+					list_r.append(rrr)
+			list_sat.append(rr.satelite)
+			list_rasters.append((rr.satelite, list_r))
+	return render(request, 'preditor/indice_edit.html', {'form': form, 'sensor':sensor, 'rasters':rasters, 'list_rasters':list_rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
+def testeFormula(sat, formula, tag):
+	path = os.getcwd() + '\\arquivos\\testes\\'+sat.descricao
+	src_ref = rasterio.open(path + '\\cortes\\'+sat.bandReferencia+'.tif')
 	try:
 		raster = calc.indice_calc_formula(src_ref, sat, formula, path)
 	except:
@@ -162,15 +208,19 @@ def testeFormula(formula, tag):
 		return False
 	calc.indice_write_tif(raster, src_ref, path +'\\', tag)
 	return True
-def erroFormula(formula):
-	lbs = RasterBand.objects.all()
+def erroFormula(user, sat, formula):
+	rasters = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
+	rasters = list(rasters)
+	r_resp = Raster.objects.filter(responsavel=user, satelite=sat)
+	for r in r_resp:
+		rasters.append(r)
 	list_bands = []
-	for lb in lbs:
+	for lb in rasters:
 		list_bands.append(lb.tagOnSat)
-	list = formula.split()
+	list_formula = formula.split()
 	list_r = []
 	erro = False
-	for char in list:
+	for char in list_formula:
 		if len(char) > 1:
 			if list_r.__contains__(char):
 				continue
@@ -213,11 +263,16 @@ def modelo_open(request, pk):
 		v = Variavel(r.pk, r.tag, marked)
 		vars.append(v)
 	areas = []
+	area_total = 0.0
 	for classe in classes:
 		areas2 = AreaModelo.objects.filter(classe=classe)
 		if areas2:
 			for area in areas2:
 				areas.append(area)
+				try:
+					area_total = area_total+float(area.tamanho)
+				except:
+					print("area sem tamanho")
 	repos = utils.list_repositorios(modelo.stack)
 	models = ArquivoModelo.objects.filter(modelo=modelo)
 	tipo_models = TipoArquivoModelo.objects.all()
@@ -232,9 +287,14 @@ def modelo_open(request, pk):
 		if item == "target_train.txt":
 			y_ok = True
 			print("achou y")
+	locale.setlocale(locale.LC_ALL, '')  # pega o local da máquina e seta o locale
+	try:
+		t = locale.format('%d', int(modelo.total_dados), 1)
+	except:
+		t = 0
 	if (target_ok and y_ok):
-		status = "Dados Preparados para: Treinos ("+modelo.percent+"%)  e Testes ("+str(100-int(modelo.percent))+"%)"
-	return render(request, 'preditor/modelo_open.html', {'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
+		status = "Dados Preparados: "+str(t)+" de linhas. Treino ("+modelo.percent+"%)  e Teste ("+str(100-int(modelo.percent))+"%)"
+	return render(request, 'preditor/modelo_open.html', {'area_total':area_total,'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
 
 def excluir_arquivo(request, pk):
 	if not request.user.is_authenticated:
@@ -262,8 +322,9 @@ def gerar_stacks_modelo (request, pk):
 	for rm in rms:
 		Raster_Modelo.delete(rm)
 	for k, v in request.POST.lists():
-		if k.startswith('repo_'):
-			stack = k[-12:]
+		if k=='repo':
+			print(v)
+			stack = v[0]
 			modelo.stack = stack
 			modelo.save()
 		if k.startswith('var_'):
@@ -304,6 +365,7 @@ def prepararDataFrameModelo(pk, percent):
 	y = pd.Series()
 	target_test = pd.DataFrame()
 	y_test = pd.Series()
+	total_dados = 0
 	for area in areas:
 		dfArea = pd.DataFrame()
 		id = str(area.pk)
@@ -329,6 +391,9 @@ def prepararDataFrameModelo(pk, percent):
 			vv = pd.Series(val)
 			dfArea[r.tag] = vv
 		dfArea = dfArea.dropna()
+		area.classe.total_dados = int(area.classe.total_dados) + len(dfArea)
+		area.classe.save()
+		total_dados = total_dados + len(dfArea)
 		train, test = train_test_split(dfArea, test_size=float(100-int(percent))/100)
 		target = pd.concat([target, train])
 		target_test = pd.concat([target_test, test])
@@ -352,6 +417,7 @@ def prepararDataFrameModelo(pk, percent):
 	print("Gerando arquivo y_test")
 	np.savetxt(r'' + path_model + "y_test.txt", y_test.values, fmt='%s')
 	modelo.percent = str(percent)
+	modelo.total_dados = total_dados
 	modelo.save()
 
 def prepararDataFrameStack(modelo_treinado, area, stack):
@@ -456,12 +522,13 @@ def treinar_Request(request, pk):
 		return redirect('modelos')
 	percent = request.POST['percent']
 	max_depth = int(request.POST['max_depth'])
+	loop_cross = int(request.POST['loop_cross'])
 	for k, v in request.POST.lists():
 		if k.startswith('model_'):
 			id = k[6:]
-			treinar(percent,pk, int(id), max_depth)
+			treinar(percent,pk, int(id), max_depth, loop_cross)
 	return redirect('modelo_open', pk=pk)
-def treinar(percent, pk, pk_me, max_depth):
+def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	modelo = Modelo.objects.get(pk=pk)
 	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
 	target_ok = False
@@ -514,10 +581,8 @@ def treinar(percent, pk, pk_me, max_depth):
 		imp.save()
 	filename = tipo.filename + str(arq_modelo.id) + '.sav'
 	joblib.dump(model, path_model + filename)
-
-def validar(request, pk):
-	loop_cross = int(request.POST['loop_cross'])
-	arq_modelo = ArquivoModelo.objects.get(pk=pk)
+	validar(loop_cross, arq_modelo)
+def validar(loop_cross, arq_modelo):
 	modelo = arq_modelo.modelo
 	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
 	tipo = arq_modelo.tipo
@@ -535,7 +600,7 @@ def validar(request, pk):
 	arq_modelo.acuraciaTreinoMenor = menor
 	arq_modelo.acuraciaTreinoMaior = maior
 	arq_modelo.save()
-	return redirect('modelo_open', pk=modelo.pk)
+
 def testar(request, pk):
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
@@ -792,7 +857,11 @@ def area_open(request, pk):
 	m=m._repr_html_()
 	dec = glob.glob(path+'/declividade.tif')
 	alt = glob.glob(path+'/altitude.tif')
-	tiles = utils.verificar_tile_mask(mask)
+	try:
+		tiles = utils.verificar_tile_mask(mask)
+	except:
+		print("Erro na leitura dos Tiles!!!")
+		tiles = []
 	if len(tiles) == 1:
 		repos = utils.list_repositorios(tile = tiles[0])
 	else:
@@ -806,11 +875,17 @@ def stack(request, pk, stack):
 	projeto = area.projeto
 	if projeto.responsavel != request.user:
 		return redirect('projetos')
-	r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False)
 	repo = RepoSentinel()
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
+	sensor = Satelite.objects.get(descricao="Sentinel"+repo.level)
+	r_indices = Raster.objects.filter(isIndex=True, publica=True, formula__isnull=False, satelite=sensor)
+	meus_indices = Raster.objects.filter(isIndex=True, publica=False, formula__isnull=False, responsavel=request.user, satelite=sensor)
+	r_indices = list(r_indices)
+	for m in meus_indices:
+		r_indices.append(m)
+
 	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
 	l = len(path+'\\cortes')
 	cortes = []
@@ -954,6 +1029,8 @@ def download_page(request):
 	mask = None
 	area_m = None
 	m = None
+	data_ini = (datetime.today().date()-timedelta(days=3)).isoformat()
+	data_fim = datetime.today().date().isoformat()
 	if request.method == "POST":
 		mask_hidden = request.POST['mask_hidden']
 		if mask_hidden:
@@ -976,7 +1053,7 @@ def download_page(request):
 			folium.GeoJson(mask, name="area corte").add_to(m)
 			folium.LayerControl().add_to(m)
 			m = m._repr_html_()
-	return render(request, 'preditor/download_page.html', {'mask': mask, 'area_m': area_m, 'my_map': m, 'repos':repos})
+	return render(request, 'preditor/download_page.html', {'mask': mask, 'data_ini':data_ini, 'data_fim':data_fim, 'area_m': area_m, 'my_map': m, 'repos':repos})
 
 def trescores_page(request):
 	return render(request, 'preditor/trescores_page.html', {})
@@ -1063,6 +1140,12 @@ def uploadMaskModelo(request, pk):
 	with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
 		for chunk in mask.chunks():
 			destination.write(chunk)
+	with open(path+str(pk)+'.geojson') as data_file:
+		geoms = json.loads(data_file.read())
+	obj = geoms['features'][0]['geometry']
+	area_m = c_area(obj)
+	area.tamanho = str(area_m)
+	area.save()
 	return redirect('/area_modelo/'+str(area.pk))
 
 def upload_modelo(request):
@@ -1310,11 +1393,16 @@ def corte(id, repo, path, path_mask):
 	l = len(path)
 	rasters = []
 	# gdal.SetConfigOption('GDAL_HTTP_UNSAFESSL', 'YES')
+	ListRastes = []
+	if repo.level == "1C":
+		ListRastes = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']
+	if repo.level == "2A":
+		ListRastes = ['B01_20m','B02_10m','B03_10m','B04_10m','B05_20m','B06_20m','B07_20m','B08_10m','B8A_20m','B09_60m','B11_20m','B12_20m','AOT_10m','SCL_20m','TCI_10m','WVP_10m',]
 	for dirpath, dirnames, filenames in os.walk(path_input):
 		for file in filenames:
 			if (len(file) > 8):
 				if (file[-4:] == '.jp2'):
-					if (file[:3] != "MSK"):
+					if ListRastes.__contains__(file[t_file_name:-4]):
 						input = dirpath + '\\' + file
 						out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
 						gdal.Warp(srcDSOrSrcDSTab=input,
@@ -1479,9 +1567,8 @@ def preparar_download_sentinel(request):
 	d_ini = ''.join(filter(lambda i: i not in "-", data_ini))
 	d_fim = ''.join(filter(lambda i: i not in "-", data_fim))
 	mask_hidden = request.POST['mask_hidden']
-	if mask_hidden:
-		path_mask = mask_hidden
-	else:
+	path_mask = mask_hidden
+	if path_mask == 'None':
 		mask = request.FILES['mask']
 		name = secrets.token_hex(nbytes=4)
 		with default_storage.open(name + '.geojson', 'wb+') as destination:
@@ -1496,7 +1583,9 @@ def preparar_download_sentinel(request):
 						 #cloudcoverpercentage=(0, 30),
 						 date=(d_ini, d_fim))
 	products_df = api.to_dataframe(products)
-	prds = products_df.loc[:,"title"]
+	prds = []
+	if len(products_df)>0:
+		prds = products_df.loc[:,"title"]
 
 	mask = path_mask
 	# calculando área m2
@@ -1830,12 +1919,12 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 
 	return JsonResponse({'my_map_modal': m, 'tipo':tipo})
 
-def mapateste_json(request, tag):
+def mapateste_json(request, tag, sat='Sentinel2C'):
     #if not request.user.has_perm('aSocial.list_curso'):
         #raise PermissionDenied
     #### abrindo imagem
 	erro = ""
-	path = os.getcwd() + '\\arquivos\\testes\\1C\\'
+	path = os.getcwd() + '\\arquivos\\testes\\'+sat+'\\'
 	try:
 		src = rasterio.open(path+tag+'.tif')
 	except:
@@ -1884,36 +1973,20 @@ def summary_json(request, pk):
 def dados_json(request, pk):
 	modelo = Modelo.objects.get(pk=pk)
 	desc_modelo = "Data Criação: "+str(modelo.data_criacao)
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
-	target = np.loadtxt(r'' + path_model + "target_train.txt", delimiter=";")
-	y = np.loadtxt(r'' + path_model + "y_train.txt", dtype='str', delimiter="&&")
-	pie_y = pd.Series(y).value_counts()
+	classes = ClasseModelo.objects.filter(modelo = modelo)
 	pie_y_class = []
 	pie_y_data = []
-	for p in pie_y:
-		pie_y_data.append(p)
-	rows = pie_y.index.values
-	for p in rows:
-		pie_y_class.append(p)
-	y_test = np.loadtxt(r'' + path_model + "y_test.txt", dtype='str', delimiter="&&")
-	pie_test = pd.Series(y_test).value_counts()
-	pie_test_class = []
 	pie_test_data = []
-	for p in pie_test:
-		pie_test_data.append(p)
-	rows = pie_test.index.values
-	for p in rows:
-		pie_test_class.append(p)
-
-	y_total = pd.concat([pd.Series(y), pd.Series(y_test)])
-	pie_total = y_total.value_counts()
-	pie_total_class = []
 	pie_total_data = []
-	for p in pie_total:
-		pie_total_data.append(p)
-	rows = pie_total.index.values
-	for p in rows:
-		pie_total_class.append(p)
+	for cla in classes:
+		pie_y_class.append(cla.classe)
+		total = float(cla.total_dados)
+		y = np.around(total*float(modelo.percent)/100.0)
+		pie_y_data.append(y)
+		pie_test_data.append(total - y)
+		pie_total_data.append(total)
+	pie_test_class = pie_y_class
+	pie_total_class = pie_y_class
 	return JsonResponse({'modelo': modelo.descricao,
 						 'desc_modelo': desc_modelo,
 						 'pie_total_class':pie_total_class,

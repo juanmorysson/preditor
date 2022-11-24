@@ -1,6 +1,6 @@
 import numpy as np
 import rasterio
-from .models import RasterBand
+from .models import Raster
 import os
 
 def ndvi(srcRed, srcNearInRed):
@@ -43,7 +43,7 @@ def indice_calc_formula(srcRef, sat, formula, path):
 			print(char)
 	myVars = vars()
 	for item in list_r:
-		name = RasterBand.objects.get(tagOnSat=item, satelite = sat).band
+		name = Raster.objects.get(tagOnSat=item, satelite = sat).band
 		linha = " rasterio.open('"+path+"\\cortes\\"+name+".tif').read(1)"
 		linha = linha.replace("\\","\\\\")
 		myVars[item] = eval(linha)

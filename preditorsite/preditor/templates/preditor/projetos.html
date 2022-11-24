@@ -38,7 +38,7 @@
 						<tr onclick="window.location='projeto/{{projeto.id}}';" class="clickable-row">
 							<td>{{projeto.descricao}}</td>
 							<td>{{projeto.data_criacao}}</td>
-							<td>{{projeto.responsavel}}</td>
+							<td>{{projeto.responsavel.first_name}}</td>
 						</tr>
 					{% endfor %}
 				</tbody>

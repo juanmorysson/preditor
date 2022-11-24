@@ -1,26 +1,28 @@
 URGENTE: ler modelo externo............
+    - identificar cada varável *****************
+
+# Modelo:
+    - validar tamanho da área
+        - visualizar areas geral
+        - validar TILE da área total
 
 # Treinamento
-    - acuráciia e teste logo junto ao treinar
     - relatório de evolução por modelo
 
 # Classificação:
     - poder alterar nome do índice para se adaptar ao modelo
+    - Classificar por modelo upload
+        - Tirar dependencia do tipo para classificar
 
-# Importar modelo de outra fonte (satelite)
-    - cadastrar cada banda
-    - setar cores de cada classe
-    - identificar cada varável
+# Importar imagens de outra fonte (satelite)
+    - importar já cortadas?
+    - nomear variáveis?
+    - Tratar imagens com 3 bandas?
+
+
 
 # Segurança:
 	- fazer cadastro obrigatório para ter acesso às telas padrão
-
-# Layout
-	- mudar para cor mais clara 
-	- inserir informações do IFPI e IFgoiano
-	- cores botões - ok
-	- aproveitar melhor os espaços 
-	- criar logo do preditor em T - ok
 
 # Ferramenta
 	# Telas:
@@ -29,34 +31,24 @@ URGENTE: ler modelo externo............
 	        - possibilitar mudar gradiente de cores (na tela anterior???)
 	        - possibilitar ajutar os intervalos de valores para cada cor
     # Cadastrar Fórmulas
-        - só salvar se validar
+        - adicionar formulas para outros sensores
+        - testar formulas com outros operadores
 	# Demarcar área
 		- deixar botão mais vizível
 		- salvar o geojson direto no projeto
 	# download de imagens de satélite
-		- up mascara da área desejada
-		- corrigir o retorno do satelite e da mascara no Verificar ***************
-		- fazer o download a partir dos dados de um projeto (Setar mascara com area de interesse)
+		- corrigir o retorno do satelite Verificar ***************
 		- fazer o download a partir dos dados de um modelo (juntar os poligonos e setar mascara)
-
 	# extrair imagens da área
-		- criar funcionalidade de fazer stack com índices por data
-			- filtrar datas por imagens baixadas do Sentinel Level 2A
-				- listar pastas de repositório - ok
 *				- fazer busca por data
 			- verificar percentual de nuvens
 				- escolher visualmente? - ok
 				- calcular ?
 			- gerar stack por índices
 				- outros índices
-				    - fazer tela de cadastrar indices
-				        - os publicos só o Juan altera
-				        - fazer teste nos dois tipos de satélites
-				        - criar botão publicar
-				            - enviar email para análise
 
-		- datum: Sirgas (Brasil)
-			- verificar se é necessário e possível usar
+
+
 
     # hiper parâmetros de cada modelo: estudar
         https://topepo.github.io/caret/train-models-by-tag.html#Random_Forest

@@ -32,20 +32,18 @@
 			  <table class="table user-table table-hover">
 				<thead>
 				  <tr>
-				   <th class="border-top-0">Modelo</th>
-				   <th class="border-top-0">Pasta</th>
-				   <th class="border-top-0">Data Criação</th>
-				   <th class="border-top-0">Responsavel</th>
-			       <th class="border-top-0">Externo (upload)</th>
+				   <th class="border-top-0" >Modelo</th>
+				   <th class="border-top-0" >Data Criação</th>
+				   <th class="border-top-0" >Responsavel</th>
+			       <th class="border-top-0" >Externo (upload)</th>
 				  </tr>
 				</thead>
 				<tbody id="body_edital">
 					{% for modelo in modelos %}
 						<tr onclick="window.location='modelo/{{modelo.id}}';" class="clickable-row">
 							<td>{{modelo.descricao}}</td>
-							<td>{{modelo.pasta}}</td>
 							<td>{{modelo.data_criacao}}</td>
-							<td>{{modelo.responsavel}}</td>
+							<td>{{modelo.responsavel.first_name}}</td>
 							<td>{{modelo.upload}}</td>
 						</tr>
 					{% endfor %}

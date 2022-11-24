@@ -9,11 +9,18 @@
         </div>
             <div class="card">
                 <div class="card-body">
-                    <p class="col-sm-12">
-                    Modelo: {{ modelo.descricao }} <br>
-                    Data Criação: {{ modelo.data_criacao }} <br>
-                    Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
-                    </p>
+                    <div class="row">
+                        <p class="col-sm-9">
+                        Modelo: {{ modelo.descricao }} <br>
+                        Data Criação: {{ modelo.data_criacao }} <br>
+                        Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
+                        </p>
+                        <div class="col-sm-3" align="right">
+                            <a href="/modelo/{{ modelo.pk }}/" class="btn btn-primary">
+                                Voltar
+                            </a>
+                        </div>
+                    </div>
                 </div> 
             </div>
     </div>

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Projeto, Area, Modelo, AreaModelo, ClasseModelo, Raster
+from .models import Projeto, Area, Modelo, AreaModelo, ClasseModelo, Raster, Satelite
 import datetime
 
 class ModeloForm(forms.ModelForm):
@@ -16,14 +16,24 @@ class IndiceForm(forms.ModelForm):
 
     class Meta:
         model = Raster
-        fields = ( 'tag','formula', )
-        labels = {'tag': 'Índice', }
-
+        fields = ( 'tag','formula','satelite', )
+        labels = {'satelite':'Sensor' }
         widgets = {
             'tag': forms.TextInput(attrs={'class': 'form-control'}),
             'formula': forms.TextInput(attrs={'class': 'form-control'}),
         }
-
+    def __init__(self, user, *args, **kwargs):
+        super(IndiceForm, self).__init__(*args, **kwargs)
+        sensores = Satelite.objects.filter(publica=True)
+        list = []
+        s_resp = Satelite.objects.filter(responsavel=user)
+        for ss in sensores:
+            item = (ss.pk, ss.descricao)
+            list.append(item)
+        for s in s_resp:
+            item = (s.pk, s.descricao)
+            list.append(item)
+        self.fields['satelite'].choices = list
 class ClasseModeloForm(forms.ModelForm):
 
     class Meta:

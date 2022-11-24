@@ -10,6 +10,7 @@ class Modelo(models.Model):
     data_criacao =  models.DateTimeField(null=True,blank=True)
     stack = models.CharField(max_length=200, null=True)
     percent = models.CharField(max_length=3, null=True)
+    total_dados = models.CharField(max_length=200, null=True)
     upload = models.BooleanField(default=False)
 
     def __str__(self):
@@ -42,6 +43,7 @@ class ClasseModelo(models.Model):
     classe = models.CharField(max_length=200, null=False, blank=False)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
     cor = models.CharField(max_length=8, null=False, blank=False)
+    total_dados = models.CharField(max_length=200, null=True, default="0")
 
     def __str__(self):
         return self.classe
@@ -49,7 +51,7 @@ class ClasseModelo(models.Model):
 class AreaModelo(models.Model):
     descricao = models.CharField(max_length=200, null=True)
     classe = models.ForeignKey(ClasseModelo, on_delete=models.CASCADE, null=False)
-
+    tamanho = models.CharField(max_length=200, null=True)
     def __str__(self):
         return self.descricao
 
@@ -71,23 +73,35 @@ class Area(models.Model):
 
     def __str__(self):
         return self.descricao
+class Satelite(models.Model):
+    descricao = models.CharField(max_length=200)
+    bandReferencia = models.CharField(max_length=200)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
+    publica = models.BooleanField(default=False)
+    def __str__(self):
+        return self.descricao
+
 class Raster(models.Model):
-    tag = models.CharField(max_length=200, unique=True)
+    tag = models.CharField(max_length=200, unique=False)
+    band = models.CharField(max_length=200, null=True, blank=True)
+    tagOnSat = models.CharField(max_length=200, null=True, blank=True)
+    satelite = models.ForeignKey(Satelite, on_delete=models.CASCADE, null=True)
     isIndex = models.BooleanField(default=False)
     formula = models.CharField(max_length=200, null=True, blank=True)
     responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
     publica = models.BooleanField(default=False)
     def __str__(self):
-        return self.tag
+        return self.satelite.descricao+ ": "+self.tag +" - "+ verificaBool(self.isIndex,"Índice","Banda")
+
+def verificaBool(b, v, f):
+	if b:
+		return v
+	else:
+		return f
 class Raster_Modelo(models.Model):
     raster = models.ForeignKey(Raster, on_delete=models.CASCADE, null=False)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
     data_criacao = models.DateTimeField(default=timezone.now)
-class Satelite(models.Model):
-    descricao = models.CharField(max_length=200)
-    bandReferencia = models.CharField(max_length=200)
-    def __str__(self):
-        return self.descricao
 
 class RasterBand(models.Model):
     band = models.CharField(max_length=200)

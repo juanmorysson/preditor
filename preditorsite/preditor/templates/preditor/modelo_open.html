@@ -15,90 +15,121 @@
 </div>
 <div class="container-fluid">
     <div class="row">
-        <!-- column -->
-        <div class="col-sm-8">
-        	<h3 class="card-title mb-0 p-10"> Descrição modelo </h3>
+        <div class="col-sm-12">
+        	<h3 class="card-title mb-0 p-10"> Descrição do Modelo </h3>
             <div class="card">
                 <div class="card-body">
-					<p class="col-sm-12">
-					Modelo: {{ modelo.descricao }} <br>
-					Data Criação: {{ modelo.data_criacao }} <br>
-					Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
-					</p>
-					<a href="/modelo/{{ modelo.pk }}/edit/" class="btn btn-primary">
-                        Editar
-                    </a>
+					<div class="row">
+						<p class="col-sm-10">
+						Modelo: {{ modelo.descricao }} <br>
+						Data de Criação: {{ modelo.data_criacao }} <br>
+						Responsável: {{ modelo.responsavel.first_name }} {{ modelo.responsavel.last_name }}
+						</p>
+						<div class="col-sm-2" align="right">
+							<a href="/modelo/{{ modelo.pk }}/edit/" class="btn btn-primary">
+								Editar
+							</a>
+						</div>
+					</div>
 				</div> 
             </div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-4">
+        	<h3 class="card-title mb-0 p-10"> Classificação do Modelo (Passo 1)</h3>
+			<div class="card">
+				<div class="card-body">
+					{% if not modelo.upload %}
+					<a href="/classe_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
+					Nova Classe
+					</a>
+					{% endif %}
+					<table class="table user-table table-hover">
+						<thead>
+							<tr>
+								<th class="border-top-0">
+									Classe
+								</th>
+								<th class="border-top-0">
+									Cor
+								</th>
+							</tr>
+						</thead>
+						<tbody id="body_edital">
+							{% for classe in classes %}
+								<tr onclick="window.location='../../classe_modelo/{{classe.pk}}/';">
+									<td>
+										{{classe.classe}}
+									</td>
+									<td style="background-color: {{classe.cor}}">
+
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+        </div>
+		<div class="col-sm-8">
 			{% if not modelo.upload %}
     		<h3 class="card-title mb-0 p-10"> Áreas Classificadas (Passo 2) </h3>
         	<div class="card">
             	<div class="card-body">
-            		<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
-		        		Nova Área
-		        	</a>
-            		<table class="table user-table table-hover">
-							<thead>
-								<tr>
-									<th class="border-top-0">
-										Descrição
-									</th>
-									<th class="border-top-0">
-										Classe
-									</th>
-									<th class="border-top-0">
-										Cor
-									</th>
-								</tr>
-							</thead>
-								<tbody id="body_edital">
-								{% for area in areas %}
-									<tr onclick="window.location='../../area_modelo/{{area.pk}}/';"">
-										<td>
-											{{area.descricao}} 
-										</td>
-										<td>
-											{{area.classe.classe}} 
-										</td>
-										<td style="background-color: {{area.classe.cor}}">
-											{{area.classe.cor}} 
-										</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-				</div>
+					<div class="row">
+						<div class="col-sm-4">
+							<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
+								Nova Área
+							</a>
+						</div>
+						<div class="col-sm-8" align="right">
+							Área total: {{area_total}} m²
+						</div>
+					</div>
 
+
+
+            		<table class="table user-table table-hover">
+						<thead>
+							<tr>
+								<th class="border-top-0">
+									Descrição
+								</th>
+								<th class="border-top-0">
+									Classe
+								</th>
+								<th class="border-top-0">
+									Cor
+								</th>
+								<th class="border-top-0">
+									Área M²
+								</th>
+
+							</tr>
+						</thead>
+							<tbody>
+							{% for area in areas %}
+								<tr onclick="window.location='../../area_modelo/{{area.pk}}/';"">
+									<td>
+										{{area.descricao}}
+									</td>
+									<td>
+										{{area.classe.classe}}
+									</td>
+									<td style="background-color: {{area.classe.cor}}">
+
+									</td>
+									<td>
+										{{area.tamanho}}
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
 			</div>
 			{% endif %}
-        </div>
-        <div class="col-sm-4">
-        	<h3 class="card-title mb-0 p-10"> Classificação do Modelo (Passo 1)</h3>
-        	<div class="col-sm-12">
-            	<div class="card">
-                	<div class="card-body">
-						{% if not modelo.upload %}
-                		<a href="/classe_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
-		        		Nova Classe
-		        		</a>
-						{% endif %}
-                		<table class="table user-table table-hover">
-							<tbody id="body_edital">
-								{% for classe in classes %}
-									<tr onclick="window.location='../../classe_modelo/{{classe.pk}}/';">
-										<td>
-											{{classe.classe}} 
-										</td>
-										<td style="background-color: {{classe.cor}}">
-											{{classe.cor}} 
-										</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-					</div>
-				</div> 
-            </div>
         </div>
     </div>
 	{% if not modelo.upload %}
@@ -106,12 +137,12 @@
 			                            {% csrf_token %}
     <div class="row">
         <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Imagens para o Modelo (Escolher Variáveis do Modelo ) </h3>
+        	<h3 class="card-title mb-0 p-10"> Imagens para o Modelo (Escolher Variáveis do Modelo ) (Passo 3) </h3>
         </div>
 
     	<div class="col-sm-5">
         	<div class="card">
-            	<div class="card-body">
+            	<div class="card-body" style="overflow-y: scroll; height: 410px;">
             		Sentinel: selecionar data:
             		<table class="table user-table table-hover">
 						<thead>
@@ -122,7 +153,7 @@
 							  <th class="border-top-0"></th>
                           </tr>
                         </thead>
-						<tbody id="body_edital">
+						<tbody>
 							{% for repo in repos %}
 								<tr>
 									<td>
@@ -135,7 +166,7 @@
 										{{repo.tile}}
 									</td>
 									<td>
-										<input type="checkbox" name="repo_{{repo.sat}}{{repo.level}}{{repo.data}}"
+										<input type="radio" name="repo" value="{{repo.sat}}{{repo.level}}{{repo.data}}"
 											   {% if repo.marked %}
 											   checked="checked"
 											   {% endif %}
@@ -153,7 +184,7 @@
             	<div class="card-body" style="overflow-y: scroll; height: 410px;">
             		Escolher Variáveis:
             		<table class="table user-table table-hover">
-						<tbody id="body_edital">
+						<tbody>
 							{% for var in vars %}
 								<tr>
 									<td>
@@ -192,46 +223,9 @@
 			                            {% csrf_token %}
     	<div class="row">
 			<div class="col-sm-12">
-				<h3 class="card-title mb-0 p-10"> Treinamento  </h3>
+				<h3 class="card-title mb-0 p-10"> Preparar Dados (Passo 4) </h3>
 			</div>
-			<div class="col-sm-5">
-				<div class="card">
-					<div class="card-body">
-						Selecionar Modelo(s):
-						<table class="table user-table table-hover">
-							<tbody id="body_edital">
-									<tr>
-										<td>
-											Random Forest Classificator
-											<div class="row">
-												<div class="col-sm-4 col-4">
-
-												</div>
-												<div class="col-sm-8 col-8">
-													Galhos:
-													<input type="range" name="max_depth" style="width: 100%;" value="2" min="2" max="5" oninput="this.nextElementSibling.value = this.value">
-													<output>2</output>
-												</div>
-											</div>
-										</td>
-										<td>
-											<input type="checkbox" name="model_1">
-										</td>
-									</tr>
-									<tr>
-										<td>
-											Support Vector Machine
-										</td>
-										<td>
-											<input type="checkbox" name="model_2">
-										</td>
-									</tr>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-			<div class="col-sm-4">
+			<div class="col-sm-10">
 				<div class="card">
 					<div class="card-body">
 						Confirgurações de Dados:
@@ -256,15 +250,10 @@
 								{{status}}
 							</p>
 						</div>
-						{% if status != 'Dados não Preparados'%}
-						<a href="" data-toggle="modal" data-target=".bd-example-modal-lg3" class="clickable-row-dados btn btn-primary m-0" data-href="{{modelo.id}}" >
-							Dados
-						</a>
-						{% endif %}
 					</div>
 				</div>
 			</div>
-			<div class="col-sm-3">
+			<div class="col-sm-2">
 				<div class="card">
 					<div class="card-body">
 						Ações:
@@ -272,6 +261,74 @@
 						<button type="submit" formaction="/modelo/prepararDF/{{ modelo.pk }}" class="btn btn-primary m-10">
 			             	Preparar Dados
 			        	</button>
+						{% if status != 'Dados não Preparados'%}
+						<br>
+						<a href="" data-toggle="modal" data-target=".bd-example-modal-lg3" class="clickable-row-dados btn btn-secondary m-10" data-href="{{modelo.id}}" >
+							Dados
+						</a>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-sm-12">
+				<h3 class="card-title mb-0 p-10"> Treinamento (Passo 5)  </h3>
+			</div>
+			<div class="col-sm-6">
+				<div class="card">
+					<div class="card-body">
+						Selecionar Modelo(s):
+						<br><br>
+						<div class="row">
+							<div class="col-sm-10">
+								Random Forest Classificator
+								<div class="row">
+									<div class="col-sm-4 col-4">
+
+									</div>
+									<div class="col-sm-8 col-8">
+										Galhos:
+										<input type="range" name="max_depth" style="width: 100%;" value="2" min="2" max="5" oninput="this.nextElementSibling.value = this.value">
+										<output>2</output>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-2" align="right">
+								<input type="checkbox" name="model_1">
+							</div>
+						</div>
+						<br>
+						<div class="row">
+							<div class="col-sm-10">
+								Support Vector Machine
+							</div>
+							<div class="col-sm-2" align="right">
+								<input type="checkbox" name="model_2">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-4">
+				<div class="card">
+					<div class="card-body">
+						Confirgurações de Treinamento:
+						<br><br>
+						<p>
+							Validação Cruzada (Quantidade de loops):
+						</p>
+						<div class="form-group">
+							<input type="range" name="loop_cross" style="width: 100%;" value="3" min="2" max="6" oninput="this.nextElementSibling.value = this.value">
+							<output style="width: 100%;">3</output>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-2">
+				<div class="card">
+					<div class="card-body">
+						Ações:
 						<br>
 						<button type="submit" formaction="/modelo/treinar/{{ modelo.pk }}" class="btn btn-primary m-10">
 			             	Treinar
@@ -284,115 +341,103 @@
 	</form>
 	<div class="row">
 		<div class="col-sm-12">
-			<h3 class="card-title mb-0 p-10"> Testes </h3>
+			<h3 class="card-title mb-0 p-10"> Resultados e Testes </h3>
 		</div>
         <div class="col-sm-12">
         	<div class="card">
             	<div class="card-body">
-					<form method="POST" enctype="multipart/form-data">
-			                            {% csrf_token %}
-						Modelos Treinados:
-						<table class="table user-table table-hover">
-							<tbody id="body_edital">
-									<tr>
-										<th rowspan="3">
-											Modelo Treinado
-										</th>
-										<th rowspan="3">
-											Data de Treinamento
-										</th>
-										<th colspan="4">
-											Validação Cruzada
-										</th>
-										<th colspan="2">
-											Teste
-										</th>
-										<td	 rowspan="3">
-											<p>
-												Validação Cruzada (Quantidade de loops):
-											</p>
-											<div class="form-group">
-												<input type="range" name="loop_cross" style="width: 100%;" value="3" min="2" max="6" oninput="this.nextElementSibling.value = this.value">
-												<output style="width: 100%;">3</output>
-											</div>
-										</td>
-									</tr>
-									<tr>
-										<th rowspan="2">
-											Loops
-										</th>
-										<th colspan="3">
-											Acurácia
-										</th>
-										<th rowspan="2">
-											Data
-										</th>
-										<th rowspan="2">
-											Kappa
-										</th>
-									</tr>
-									<tr>
-										<th>
-											Média
-										</th>
-										<th>
-											Maior
-										</th>
-										<th>
-											Menor
-										</th>
-									</tr>
-								{% for model in models %}
-									<tr >
-										<td data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum" data-href="{{model.id}}">
-											{{model.tipo.descricao}}
-											{% if model.max_depth %}
-												<br> Galhos: {{model.max_depth}}
-											{% endif %}
-										</td>
-										<td>
-											{{model.data_treinamento|date:'d/m/Y H:i'}}
-										</td>
-										<td>
-											{{model.loop_cross}}
-										</td>
-										<td>
-											{{model.acuraciaTreinoMedia}}
-										</td>
-										<td>
-											{{model.acuraciaTreinoMaior}}
-										</td>
-										<td>
-											{{model.acuraciaTreinoMenor}}
-										</td>
-										<td>
-											{{model.data_teste|date:'d/m/Y H:i'}}
-										</td>
-										<td>
-											{{model.acuraciaTeste}}
-										</td>
-										<td>
-											<button type="submit" formaction="/modelo/validar/{{ model.id }}" class="btn btn-primary m-0">
-			             						Validar
-			        						</button>
-											<a href="/modelo/testar/{{ model.id }}" class="btn btn-primary m-0">
-												Testar
-											</a>
-											<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" data-href="{{model.id}}" >
-												Ver
-											</a>
-											<a href="/modelo/excluir_arquivo/{{ model.id }}" class="btn btn-primary m-0">
-												Excluir
-											</a>
-											<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
-												Download
-											</a>
-										</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-					</form>
+					Modelos Treinados:
+					<table class="table user-table table-hover">
+						<tbody>
+								<tr>
+									<th rowspan="3">
+										Modelo
+									</th>
+									<th rowspan="3">
+										Treinamento
+									</th>
+									<th colspan="4">
+										Validação Cruzada
+									</th>
+									<th colspan="2">
+										Teste
+									</th>
+									<td	 rowspan="3">
+										Opções
+									</td>
+								</tr>
+								<tr>
+									<th rowspan="2">
+										Loops
+									</th>
+									<th colspan="3">
+										Acurácia
+									</th>
+									<th rowspan="2">
+										Data
+									</th>
+									<th rowspan="2">
+										Kappa
+									</th>
+								</tr>
+								<tr>
+									<th>
+										Média
+									</th>
+									<th>
+										Maior
+									</th>
+									<th>
+										Menor
+									</th>
+								</tr>
+							{% for model in models %}
+								<tr style="line-height: 1.2;">
+									<td data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum" data-href="{{model.id}}">
+										{{model.tipo.descricao}}
+										{% if model.max_depth %}
+											<br> Galhos: {{model.max_depth}}
+										{% endif %}
+									</td>
+									<td>
+										{{model.data_treinamento|date:'d/m/Y H:i'}}
+									</td>
+									<td>
+										{{model.loop_cross}}
+									</td>
+									<td>
+										{{model.acuraciaTreinoMedia}}
+									</td>
+									<td>
+										{{model.acuraciaTreinoMaior}}
+									</td>
+									<td>
+										{{model.acuraciaTreinoMenor}}
+									</td>
+									<td>
+										{{model.data_teste|date:'d/m/Y H:i'}}
+									</td>
+									<td>
+										{{model.acuraciaTeste}}
+									</td>
+									<td>
+										<a href="/modelo/testar/{{ model.id }}" class="btn btn-primary m-0">
+											Testar
+										</a>
+										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" data-href="{{model.id}}" >
+											Ver
+										</a>
+										<a href="/modelo/excluir_arquivo/{{ model.id }}" class="btn btn-primary m-0">
+											Excluir
+										</a>
+										<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
+											Download
+										</a>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
@@ -426,7 +471,7 @@
 											{{model.modelo.descricao}}
 										</td>
 										<td>
-											{{model.modelo.data_criacao}}
+											{{model.modelo.data_criacao|date:'d/m/Y H:i'}}
 										</td>
 										<td>
 											<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
@@ -468,7 +513,7 @@
                     <div class="row" >
 						<div class="col-sm-9 col-9" >
 							<h3 class="page-title mb-0 p-0" id="arq"></h3>
-							<p id="desc_arq"></p>
+								<p id="desc_arq"></p>
 						</div>
 						<div class="col-sm-3 col-3">
                           <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>

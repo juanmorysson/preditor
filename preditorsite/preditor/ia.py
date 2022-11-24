@@ -66,6 +66,7 @@ def ler_modelo_arquivo(arq):
 
 def ler_modelo_up(file):
 	model = joblib.load(file)
+	print(model)
 	print(model.classes_)
 	print(model.n_features_in_)
 	# print(model)

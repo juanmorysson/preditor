@@ -30,6 +30,7 @@
 				  <tr>
 				   <th class="border-top-0">Índice</th>
 				   <th class="border-top-0">Fórmula</th>
+				   <th class="border-top-0">Sensor (SAT)</th>
 				  </tr>
 				</thead>
 				<tbody id="body_edital">
@@ -37,6 +38,7 @@
 						<tr>
 							<td>{{ip.tag}}</td>
 							<td>{{ip.formula}}</td>
+							<td>{{ip.satelite.descricao}}</td>
 						</tr>
 					{% endfor %}
 				</tbody>
@@ -54,7 +56,7 @@
 				  <tr>
 				   <th class="border-top-0">Índice</th>
 				   <th class="border-top-0">Fórmula</th>
-				   <th class="border-top-0">Responsável</th>
+				   <th class="border-top-0">Sensor</th>
 				  </tr>
 				</thead>
 				<tbody id="body_edital">
@@ -62,7 +64,7 @@
 						<tr onclick="window.location='indice/{{mi.id}}/edit';" class="clickable-row">
 							<td>{{mi.tag}}</td>
 							<td>{{mi.formula}}</td>
-							<td>{{mi.responsavel}}</td>
+							<td>{{mi.satelite.descricao}}</td>
 						</tr>
 					{% endfor %}
 				</tbody>

@@ -2,7 +2,7 @@ import pandas as pd
 from django.shortcuts import get_object_or_404
 from pyproj import Transformer
 from django.shortcuts import redirect
-from .models import Projeto, BarraProgresso
+from .models import Projeto
 from .class_utils import *
 from rasterio.enums import Resampling
 from PIL import Image
@@ -111,7 +111,7 @@ def list_repositorios(stack_marked = '', tile = None):
 			repo.data = item[11:19]
 			repo.data_format = item[11:15] + '-'+item[15:17]+'-'+item[17:19]
 			repo.sat = item[1:3]
-			repo.tile = item[20:26]
+			repo.tile = item[39:44]
 			if stack_marked == repo.sat+repo.level+repo.data:
 				repo.marked = True
 			if tile==None:
@@ -286,9 +286,15 @@ def verificar_tile_mask(path_mask):
 	prds = products_df.loc[:,"title"]
 	tiles = []
 	for p in prds:
-		tile = p[20:26]
+		tile = p[39:44]
 		if tiles.__contains__(tile):
 			print("")
 		else:
 			tiles.append(tile)
 	return tiles
+
+def verificaBool(b, v, f):
+	if b:
+		return v
+	else:
+		return f
