@@ -3,15 +3,23 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 
 # Create your models here.
+class Satelite(models.Model):
+    descricao = models.CharField(max_length=200)
+    bandReferencia = models.CharField(max_length=200)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    publica = models.BooleanField(default=False)
+    def __str__(self):
+        return self.descricao
 class Modelo(models.Model):
     pasta = models.CharField(max_length=20, unique=True)
     descricao = models.CharField(max_length=200)
-    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.PROTECT, null=True)
     data_criacao =  models.DateTimeField(null=True,blank=True)
     stack = models.CharField(max_length=200, null=True)
     percent = models.CharField(max_length=3, null=True)
     total_dados = models.CharField(max_length=200, null=True)
     upload = models.BooleanField(default=False)
+    sensor = models.ForeignKey(Satelite, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return self.descricao
@@ -73,13 +81,7 @@ class Area(models.Model):
 
     def __str__(self):
         return self.descricao
-class Satelite(models.Model):
-    descricao = models.CharField(max_length=200)
-    bandReferencia = models.CharField(max_length=200)
-    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
-    publica = models.BooleanField(default=False)
-    def __str__(self):
-        return self.descricao
+
 
 class Raster(models.Model):
     tag = models.CharField(max_length=200, unique=False)
@@ -88,7 +90,7 @@ class Raster(models.Model):
     satelite = models.ForeignKey(Satelite, on_delete=models.CASCADE, null=True)
     isIndex = models.BooleanField(default=False)
     formula = models.CharField(max_length=200, null=True, blank=True)
-    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
     publica = models.BooleanField(default=False)
     def __str__(self):
         return self.satelite.descricao+ ": "+self.tag +" - "+ verificaBool(self.isIndex,"Índice","Banda")

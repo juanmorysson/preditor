@@ -110,7 +110,7 @@
 						</thead>
 							<tbody>
 							{% for area in areas %}
-								<tr onclick="window.location='../../area_modelo/{{area.pk}}/';"">
+								<tr onclick="window.location='../../area_modelo/{{area.pk}}/';">
 									<td>
 										{{area.descricao}}
 									</td>
@@ -133,74 +133,164 @@
         </div>
     </div>
 	{% if not modelo.upload %}
+	<a name="p3"></a>
 	<form method="POST" enctype="multipart/form-data">
 			                            {% csrf_token %}
     <div class="row">
         <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Imagens para o Modelo (Escolher Variáveis do Modelo ) (Passo 3) </h3>
+        	<h3 class="card-title mb-0 p-10"> Imagens e Variáveis para o Modelo (Passo 3) </h3>
+			<div class="card">
+				<div class="card-body">
+					Tipo de Sensor?
+					<select name="select" class="form-control" >
+						{% for s in sensores %}
+							<option value="{{s.pk}}"
+									{% if s == sensor %}
+									selected
+									{% endif %}
+									onclick="window.location='../../modelo/save_sensor/{{modelo.pk}}/{{s.pk}}#p3';"
+							>{{s.descricao}}</option>
+						{% endfor %}
+					</select>
+				</div>
+			</div>
         </div>
 
     	<div class="col-sm-5">
         	<div class="card">
-            	<div class="card-body" style="overflow-y: scroll; height: 410px;">
-            		Sentinel: selecionar data:
-            		<table class="table user-table table-hover">
+				{% if sensor.pk > 2 %}
+				<div class="card-body" style="overflow-y: scroll; height: 410px;">
+					Upload: Subir Stack:
+					<form method="POST" enctype="multipart/form-data">
+						{% csrf_token %}
+						<div class="col-sm">
+							<select name="tipoImagem" class="form-control" >
+								<option value="RGB">RGB - Três Bandas</option>
+								<option value="RED">Somente Banda Vermalho - RED</option>
+								<option value="GREEN">Somente Banda Verde - GREEN</option>
+								<option value="BLUE">Somente Banda Azul - BLUE</option>
+							</select>
+						</div>
+						<div class="col-sm">
+							<input type="file" name="imagem" accept=".jp2, .tif, .tiff, .jpg">
+						</div>
+						<div class="error-msg">
+							{{ error }}
+						</div>
+						<button type="submit" formaction="/modelo/uploadImageRepositorio/{{ modelo.pk }}/#p3" class="btn btn-secondary">
+							Add imagem
+						</button>
+					</form>
+					<table class="table user-table table-hover">
 						<thead>
                           <tr>
-                           <th class="border-top-0">Level</th>
-                           <th class="border-top-0">Data</th>
-							  <th class="border-top-0">Tile</th>
-							  <th class="border-top-0"></th>
+							  <th class="border-top-0"> Stack</th>
                           </tr>
                         </thead>
 						<tbody>
-							{% for repo in repos %}
 								<tr>
 									<td>
-										{{repo.level}}
-									</td>
-									<td>
-										{{repo.data_format}}
-									</td>
-									<td>
-										{{repo.tile}}
-									</td>
-									<td>
-										<input type="radio" name="repo" value="{{repo.sat}}{{repo.level}}{{repo.data}}"
-											   {% if repo.marked %}
-											   checked="checked"
-											   {% endif %}
-										>
+										Repositório Próprio <input type="radio" name="repo" value="__RGB_stackcustom" checked="checked">
+										<div class="row">
+											<div class="col-sm-4"></div>
+											<div class="col-sm-8" align="right">
+												<table class="table user-table ">
+													<tbody>
+													{% for repo in repo_local %}
+														<tr>
+															<td>
+																{{repo}}
+															</td>
+														</tr>
+													{% endfor %}
+													</tbody>
+												</table>
+											</div>
+										</div>
 									</td>
 								</tr>
-							{% endfor %}
 						</tbody>
 					</table>
 				</div>
+				{% else %}
+            	<div class="card-body" >
+					<div class="row">
+						<div class="col-sm-8">
+							Sentinel: Selecionar data:
+						</div>
+						<div class="col-sm-4" align="right">
+							<form method="POST">
+								{% csrf_token %}
+									<input type="hidden" name="mask_hidden" value="{{mask}}">
+								<button type="submit" formaction="/download_page" class="btn btn-secondary">
+									Download
+								</button>
+							</form>
+						</div>
+					</div>
+					<div class="row" style="overflow-y: scroll; height: 410px;">
+						<table class="table user-table table-hover" >
+							<thead>
+							  <tr>
+							   <th class="border-top-0">Level</th>
+							   <th class="border-top-0">Data</th>
+								  <th class="border-top-0">Tile</th>
+								  <th class="border-top-0"></th>
+							  </tr>
+							</thead>
+							<tbody>
+								{% for repo in repos %}
+									<tr>
+										<td>
+											{{repo.level}}
+										</td>
+										<td>
+											{{repo.data_format}}
+										</td>
+										<td>
+											{{repo.tile}}
+										</td>
+										<td>
+											<input type="radio" name="repo" value="{{repo.sat}}{{repo.level}}{{repo.data}}"
+												   {% if repo.marked %}
+												   checked="checked"
+												   {% endif %}
+											>
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				{% endif %}
 			</div>
 		</div>
 		<div class="col-sm-5">
         	<div class="card">
-            	<div class="card-body" style="overflow-y: scroll; height: 410px;">
+            	<div class="card-body">
             		Escolher Variáveis:
-            		<table class="table user-table table-hover">
-						<tbody>
-							{% for var in vars %}
-								<tr>
-									<td>
-										{{var.tag}}
-									</td>
-									<td>
-										<input type="checkbox" name="var_{{var.id}}"
-											   {% if var.marked %}
-											   checked="checked"
-											   {% endif %}
-										>
-									</td>
-								</tr>
-							{% endfor %}
-						</tbody>
-					</table>
+					<br><br>
+					<div class="row" style="overflow-y: scroll; height: 410px;">
+						<table class="table user-table table-hover">
+							<tbody>
+								{% for var in vars %}
+									<tr>
+										<td>
+											{{var.tag}}
+										</td>
+										<td>
+											<input type="checkbox" name="var_{{var.id}}"
+												   {% if var.marked %}
+												   checked="checked"
+												   {% endif %}
+											>
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div> 
         </div>
@@ -208,7 +298,7 @@
         	<div class="card">
             	<div class="card-body">
             		Ações:
-					<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/" class="btn btn-primary m-10">
+					<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/#p3" class="btn btn-primary m-10">
 			             Gerar Stack
 			        </button>
             		<a href="/modelo/ver_stacks/{{modelo.pk}}/" class="btn btn-secondary m-10">
@@ -219,6 +309,7 @@
         </div>
     </div>
 	</form>
+	<a name="p4"></a>
 	<form method="POST" enctype="multipart/form-data">
 			                            {% csrf_token %}
     	<div class="row">
@@ -258,7 +349,7 @@
 					<div class="card-body">
 						Ações:
 						<br>
-						<button type="submit" formaction="/modelo/prepararDF/{{ modelo.pk }}" class="btn btn-primary m-10">
+						<button type="submit" formaction="/modelo/prepararDF/{{ modelo.pk }}#p4" class="btn btn-primary m-10">
 			             	Preparar Dados
 			        	</button>
 						{% if status != 'Dados não Preparados'%}
@@ -271,6 +362,7 @@
 				</div>
 			</div>
 		</div>
+		<a name="p5"></a>
 		<div class="row">
 			<div class="col-sm-12">
 				<h3 class="card-title mb-0 p-10"> Treinamento (Passo 5)  </h3>
@@ -330,7 +422,7 @@
 					<div class="card-body">
 						Ações:
 						<br>
-						<button type="submit" formaction="/modelo/treinar/{{ modelo.pk }}" class="btn btn-primary m-10">
+						<button type="submit" formaction="/modelo/treinar/{{ modelo.pk }}#p5" class="btn btn-primary m-10">
 			             	Treinar
 			        	</button>
 						<br>
@@ -421,13 +513,13 @@
 										{{model.acuraciaTeste}}
 									</td>
 									<td>
-										<a href="/modelo/testar/{{ model.id }}" class="btn btn-primary m-0">
+										<a href="/modelo/testar/{{ model.id }}#p5" class="btn btn-primary m-0">
 											Testar
 										</a>
 										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" data-href="{{model.id}}" >
 											Ver
 										</a>
-										<a href="/modelo/excluir_arquivo/{{ model.id }}" class="btn btn-primary m-0">
+										<a href="/modelo/excluir_arquivo/{{ model.id }}#p5" class="btn btn-primary m-0">
 											Excluir
 										</a>
 										<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">

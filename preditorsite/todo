@@ -4,7 +4,9 @@ URGENTE: ler modelo externo............
 # Modelo:
     - validar tamanho da área
         - visualizar areas geral
+    - Passo 3
         - validar TILE da área total
+        - testar com imagem RGB
 
 # Treinamento
     - relatório de evolução por modelo

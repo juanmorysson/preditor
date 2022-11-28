@@ -253,7 +253,13 @@ def modelo_open(request, pk):
 
 	path = os.getcwd()+'\\arquivos\\modelos\\'+modelo.pasta
 	classes = ClasseModelo.objects.filter(modelo=modelo)
-	rasters = Raster.objects.all()
+	sensor = Satelite.objects.get(pk=2)
+	if modelo.sensor is not None:
+		sensor = modelo.sensor
+	else:
+		modelo.sensor=sensor
+		modelo.save()
+	rasters = Raster.objects.filter(satelite=sensor)
 	vars = []
 	for r in rasters:
 		rm = Raster_Modelo.objects.filter(modelo=modelo, raster=r)
@@ -273,9 +279,14 @@ def modelo_open(request, pk):
 					area_total = area_total+float(area.tamanho)
 				except:
 					print("area sem tamanho")
+
+	#TODO listar repos só daquele sensor
 	repos = utils.list_repositorios(modelo.stack)
 	models = ArquivoModelo.objects.filter(modelo=modelo)
 	tipo_models = TipoArquivoModelo.objects.all()
+	repo_local=[]
+	if modelo.sensor.pk>2:
+		repo_local=utils.list_filesinfolder(path+'\\repositorio\\')
 
 	target_ok = False
 	y_ok = False
@@ -294,7 +305,19 @@ def modelo_open(request, pk):
 		t = 0
 	if (target_ok and y_ok):
 		status = "Dados Preparados: "+str(t)+" de linhas. Treino ("+modelo.percent+"%)  e Teste ("+str(100-int(modelo.percent))+"%)"
-	return render(request, 'preditor/modelo_open.html', {'area_total':area_total,'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
+	sensores = Satelite.objects.filter(publica=True)
+	sensores = list(sensores)
+	s_resp = Satelite.objects.filter(responsavel=request.user)
+	for s in s_resp:
+		sensores.append(s)
+	return render(request, 'preditor/modelo_open.html', {'repo_local':repo_local, 'sensores':sensores, 'sensor':sensor, 'area_total':area_total,'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
+
+def save_sensor(request, pk, pk_sensor):
+	modelo = Modelo.objects.get(pk=pk)
+	sensor = Satelite.objects.get(pk=pk_sensor)
+	modelo.sensor=sensor
+	modelo.save()
+	return redirect('modelo_open', pk=pk)
 
 def excluir_arquivo(request, pk):
 	if not request.user.is_authenticated:
@@ -338,7 +361,9 @@ def gerar_stacks_modelo (request, pk):
 			rasters.append(r)
 	if stack=="":
 		return redirect('modelo_open', pk)
-	cortarModelo(pk, stack, rasters)
+	corte_ok, desc_erro = cortarModelo(pk, stack, rasters)
+	if not corte_ok:
+		request.session['error'] = 'Não foi Possível Cortar a Imagem! Provavelmente a imagem não faz parte do polígono...'
 	return redirect('modelo_open', pk=pk)
 
 def prepararDataFrameModelo_Request(request, pk):
@@ -353,10 +378,7 @@ def prepararDataFrameModelo_Request(request, pk):
 def prepararDataFrameModelo(pk, percent):
 	modelo = Modelo.objects.get(pk=pk)
 	s = "Sentinel" + modelo.stack[2:4]
-	sats = Satelite.objects.filter(descricao=s)
-	sat = None
-	for s in sats:
-		sat = s
+	sat = modelo.sensor
 	rms = Raster_Modelo.objects.filter(modelo=modelo)
 	classes = ClasseModelo.objects.filter(modelo=modelo)
 	areas = AreaModelo.objects.filter(classe__in=classes)
@@ -382,8 +404,7 @@ def prepararDataFrameModelo(pk, percent):
 					path = path + '\\' + modelo.stack + '\\indices\\'
 			else:
 				path = path + '\\' + modelo.stack + '\\cortes\\'
-				rb = RasterBand.objects.get(satelite=sat, raster=r)
-				nome = rb.band
+				nome = r.band
 			raster = rasterio.open(path + nome + '.tif')
 			array = raster.read(1)
 			nn = np.array(array)
@@ -800,7 +821,7 @@ def projetos(request):
 	projetos = Projeto.objects.filter(responsavel=request.user)
 	return render(request, 'preditor/projetos.html', {'projetos': projetos})
 
-def projeto_open(request, pk):
+def projeto_open(request, pk, ancora="p4"):
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
 	projeto = get_object_or_404(Projeto, pk=pk)
@@ -1126,6 +1147,36 @@ def uploadPoints(request, pk):
 	utils.gerarPolygono(p, path, str(pk))
 	return redirect('/projeto/'+str(projeto.pk))
 
+def uploadImageRepositorio(request, pk):
+	modelo = Modelo.objects.get(pk=pk)
+	if (request.FILES.get('imagem', False)==False):
+		request.session['error']='Adicione um arquivo de Imagem!'
+		return redirect('/modelo/'+str(pk)+'/')
+	imagem = request.FILES['imagem']
+	tipo = request.POST['tipoImagem']
+	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\repositorio\\'
+	if os.path.isdir(path):
+		print("path Já Criado")
+	else:
+		os.mkdir(path)
+	im = Image.open(imagem)
+	if im.getexif():
+		print(im.getexif())
+	else:
+		request.session['error'] = 'Adicione uma Iamegm Georeferenciada!'
+		return redirect('/modelo/' + str(pk) + '/')
+	if im.getbands() == ('R', 'G', 'B'):
+		im1 = Image.Image.split(im)
+		im1[0].save(path + "RED" + str(imagem)[-4:])
+		im1[1].save(path + "GREEN" + str(imagem)[-4:])
+		im1[2].save(path + "BLUE" + str(imagem)[-4:])
+	else:
+		if tipo == "RGB":
+			request.session['error'] = 'Selecione uma banda para a imagem!'
+			return redirect('/modelo/' + str(pk) + '/')
+		else:
+			im.save(path+ tipo+str(imagem)[-4:])
+	return redirect('/modelo/' + str(pk) + '/')
 def uploadMaskModelo(request, pk):
 	area = AreaModelo.objects.get(pk=pk)
 	modelo = area.classe.modelo
@@ -1326,8 +1377,7 @@ def cortar(request, pk, stack):
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
 	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-	corte(id, repo, path, path + '/../mask/')
-	
+	corte_ok = corte(id, repo, path, path + '/../mask/')
 	return redirect('stack', pk, stack)
 
 
@@ -1348,32 +1398,34 @@ def cortarModelo(pk, stack, rasters):
 		else:
 			os.mkdir(path_area)
 		path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id + '\\' + stack
-		corte(id, repo, path, path + '/../../masks/')
-		for r in rasters:
-			if r.isIndex:
-				if r.tag == 'Declividade':
-					print("Cortando Declividade")
-					utils.cortar_tif(path_area + '/../masks/', id,
-									 'repositorio/topodata/declividade_caldas.tif',
-									 path_area+'/declividade.tif')
-				if r.tag == 'Altitude':
-					print("Cortando Altitude")
-					utils.cortar_tif(path_area + '/../masks/', id,
-									 'repositorio/topodata/altitude_caldas.tif',
-									 path_area+'/altitude.tif')
-				if (r.tag != 'Declividade' and r.tag != 'Altitude'):
-					print("Gerando Índice" + r.tag)
-					s = "Sentinel"+repo.level
-					sats = Satelite.objects.filter(descricao=s)
-					sat = None
-					for s in sats:
-						sat = s
-					print(sat)
-					src_ref = rasterio.open(path+'\\cortes\\'+sat.bandReferencia+'.tif')
-					raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
-					calc.indice_write_tif(raster, src_ref, path +'\\indices\\', r.tag)
-		print("Finalizado ")
-	return redirect('stack', pk, stack)
+		corte_ok = corte(id, repo, path, path + '/../../masks/')
+		if corte_ok:
+			for r in rasters:
+				if r.isIndex:
+					if r.tag == 'Declividade':
+						print("Cortando Declividade")
+						utils.cortar_tif(path_area + '/../masks/', id,
+										 'repositorio/topodata/declividade_caldas.tif',
+										 path_area+'/declividade.tif')
+					if r.tag == 'Altitude':
+						print("Cortando Altitude")
+						utils.cortar_tif(path_area + '/../masks/', id,
+										 'repositorio/topodata/altitude_caldas.tif',
+										 path_area+'/altitude.tif')
+					if (r.tag != 'Declividade' and r.tag != 'Altitude'):
+						print("Gerando Índice" + r.tag)
+						s = "Sentinel"+repo.level
+						sats = Satelite.objects.filter(descricao=s)
+						sat = None
+						for s in sats:
+							sat = s
+						src_ref = rasterio.open(path+'\\cortes\\'+modelo.sensor.bandReferencia+'.tif')
+						raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
+						calc.indice_write_tif(raster, src_ref, path +'\\indices\\', r.tag)
+			print("Finalizado ")
+		else:
+			return False, "Erro ao cortar! Imagens fora da área de corte!"
+	return True, ""
 def corte(id, repo, path, path_mask):
 	t_file_name = -11
 	if (repo.level == '1C'):
@@ -1388,26 +1440,47 @@ def corte(id, repo, path, path_mask):
 	#### Cortar com gdal
 	# es_obj = {'a':...,'b':..., 'c':...}
 	kwargs = utils.montar_kwargs_gdal(path_mask, id)
-	path_input = ''
-	path_input = utils.path_repositorio(repo.level, repo.data)
-	l = len(path)
 	rasters = []
 	# gdal.SetConfigOption('GDAL_HTTP_UNSAFESSL', 'YES')
-	ListRastes = []
-	if repo.level == "1C":
-		ListRastes = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']
-	if repo.level == "2A":
-		ListRastes = ['B01_20m','B02_10m','B03_10m','B04_10m','B05_20m','B06_20m','B07_20m','B08_10m','B8A_20m','B09_60m','B11_20m','B12_20m','AOT_10m','SCL_20m','TCI_10m','WVP_10m',]
-	for dirpath, dirnames, filenames in os.walk(path_input):
-		for file in filenames:
-			if (len(file) > 8):
-				if (file[-4:] == '.jp2'):
-					if ListRastes.__contains__(file[t_file_name:-4]):
-						input = dirpath + '\\' + file
-						out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
-						gdal.Warp(srcDSOrSrcDSTab=input,
-								  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
-
+	listRastes = []
+	if repo.level == 'RG':
+		sat = Satelite.objects.get(descricao="Visível RGB")
+		lista = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
+		for r in lista:
+			listRastes.append(r.band)
+		for dirpath, dirnames, filenames in os.walk(path+'\\..\\..\\repositorio'):
+			for file in filenames:
+				if listRastes.__contains__(file[t_file_name:-4]):
+					input = dirpath + '\\' + file
+					out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
+					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
+					if processo == None:
+						return False
+	else:
+		path_input = ''
+		path_input = utils.path_repositorio(repo.level, repo.data)
+		l = len(path)
+		desc_sat = "Sentinel"+repo.level
+		sat = Satelite.objects.get(descricao=desc_sat)
+		lista = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
+		for r in lista:
+			listRastes.append(r.band)
+		#if repo.level == "1C":
+		#	ListRastes = ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12']
+		#if repo.level == "2A":
+		#	ListRastes = ['B01_20m','B02_10m','B03_10m','B04_10m','B05_20m','B06_20m','B07_20m','B08_10m','B8A_20m','B09_60m','B11_20m','B12_20m','AOT_10m','SCL_20m','TCI_10m','WVP_10m',]
+		for dirpath, dirnames, filenames in os.walk(path_input):
+			for file in filenames:
+				if (len(file) > 8):
+					if (file[-4:] == '.jp2'):
+						if listRastes.__contains__(file[t_file_name:-4]):
+							input = dirpath + '\\' + file
+							out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
+							processo = gdal.Warp(srcDSOrSrcDSTab=input,
+									  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
+							if processo == None:
+								return False
+	return True
 def progress_callback(complete, message, self):
 	percent = math.floor(complete * 100)
 
