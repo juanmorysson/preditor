@@ -1,26 +1,19 @@
-URGENTE: ler modelo externo............
-    - identificar cada varável *****************
-
 # Modelo:
-    - validar tamanho da área
-        - visualizar areas geral
     - Passo 3
         - validar TILE da área total
         - testar com imagem RGB
+
 
 # Treinamento
     - relatório de evolução por modelo
 
 # Classificação:
     - poder alterar nome do índice para se adaptar ao modelo
-    - Classificar por modelo upload
-        - Tirar dependencia do tipo para classificar
 
 # Importar imagens de outra fonte (satelite)
-    - importar já cortadas?
-    - nomear variáveis?
-    - Tratar imagens com 3 bandas?
-
+    - testar!!!
+    - ADD Tipo Sensor Outro: Sem limites de quantidade de bandas:
+        - B1, B2, B3, B4 ....
 
 
 # Segurança:

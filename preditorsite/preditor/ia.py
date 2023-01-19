@@ -27,12 +27,13 @@ def validar_modelo(model, target, y, split_cross):
 	maior = "%.5f" % (max * 100)
 	mean = "%.5f" % (mean * 100)
 	return mean, menor, maior
-def treinar_modelo(target, y, tipo, max_depth):
+def treinar_modelo(target, y, tipo, max_depth, list_cols = None):
 	model = None
 	importance = None
 	if tipo.tag == "rf":
 		model = rfc(max_depth=max_depth, random_state=0)
 		model.fit(target, y)
+		model.feature_names_in_= list_cols
 		print("Verificando importâncias")
 		results = permutation_importance(model, target, y, scoring='accuracy')
 		importance = results.importances_mean
@@ -53,10 +54,12 @@ def treinar_modelo(target, y, tipo, max_depth):
 
 def ler_modelo_arquivo(arq):
 	path = os.getcwd() +"\\arquivos\\modelos\\"+arq.modelo.pasta+"\\modelos\\"
-	model = joblib.load(open(path+arq.tipo.filename+str(arq.id) +".sav", 'rb'))
-	print(model.classes_)
-	print(model.n_features_in_)
-	#print(model)
+	filename = ""
+	try:
+		filename = arq.tipo.filename
+	except:
+		print("não há tipo arquivo")
+	model = joblib.load(open(path+filename+str(arq.id) +".sav", 'rb'))
 	if str(model)=="SVC()":
 		print("SVM")
 	if str(model)[:22] == "RandomForestClassifier":
@@ -66,10 +69,10 @@ def ler_modelo_arquivo(arq):
 
 def ler_modelo_up(file):
 	model = joblib.load(file)
-	print(model)
-	print(model.classes_)
-	print(model.n_features_in_)
-	# print(model)
+	try:
+		print(model.feature_names_in_)
+	except:
+		print("não deu")
 	if str(model) == "SVC()":
 		print("SVM")
 	if str(model)[:22] == "RandomForestClassifier":

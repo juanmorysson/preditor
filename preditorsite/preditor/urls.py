@@ -36,6 +36,7 @@ urlpatterns = [
     path('modelo/excluir_arquivo/<int:pk>', views.excluir_arquivo, name='excluir_arquivo'),
     path('modelo/save_sensor/<int:pk>/<int:pk_sensor>', views.save_sensor, name='save_sensor'),
     path('modelo/uploadImageRepositorio/<int:pk>/', views.uploadImageRepositorio, name="uploadImageRepositorio"),
+    path('modelo/var/<int:pk>/edit/', views.var_modelo_edit, name='var_modelo_edit'),
 
     path('upload_modelo', views.upload_modelo, name='upload_modelo'),
     path('upload_modelo/save', views.upload_modelo_save, name='upload_modelo_save'),

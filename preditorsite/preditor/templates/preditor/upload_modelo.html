@@ -30,31 +30,52 @@
     {% if modelo %}
     <div class="row">
         <!-- column -->
-        <div class="col-sm-6">
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" class="form-horizontal" enctype="multipart/form-data">
-                    {% csrf_token %}
+        <form method="POST" class="form-horizontal" enctype="multipart/form-data">
+        {% csrf_token %}
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-body">
                         <p>
                             Modelo tipo: {{modelo}}
-                            <br> Nº de Variáveis: {{modelo.n_features_in_}}
-                        </p>
-                        <div class="col-sm">
                             Nome do Modelo:
                             <input type="text" name="nome_modelo" class="form-control">
+                            <input type="hidden" name="arquivo" value="{{ arquivo }}">
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="card">
+                        <div class="card-body">
+                            Classes:
+                            {% for classe in modelo.classes_ %}
+                                <div class="col-sm">
+                                    Cor da Classe {{classe}}:
+                                    <input type="hidden" name="{{classe}}" value="{{classe}}">
+                                    <input type="color" name="cor_{{classe}}" class="form-control">
+                                </div>
+                            {% endfor %}
                         </div>
-                    	{% for classe in modelo.classes_ %}
-                            <div class="col-sm">
-                                Cor da Classe {{classe}}:
-                                <input type="hidden" name="{{classe}}" value="{{classe}}">
-                                <input type="color" name="cor_{{classe}}" class="form-control">
-                            </div>
-                        {% endfor %}
-                    	<button type="submit" class="btn btn-success" formaction="/upload_modelo/save">Salvar</button>
-                    </form>
-				</div> 
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="card">
+                        <div class="card-body">
+                            Variáveis Pretidoras: {{modelo.n_features_in_}}
+                            {% for i in listVars %}
+                                <div class="col-sm">
+                                    Variável {{i}}:
+                                    <input type="text" name="var_{{i}}" value="{{i}}" class="form-control">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
 
+            <button type="submit" class="btn btn-success" formaction="/upload_modelo/save">Salvar</button>
+            </form>
         </div>
     </div>
     {% endif %}

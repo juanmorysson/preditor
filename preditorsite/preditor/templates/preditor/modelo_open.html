@@ -73,6 +73,31 @@
 			</div>
         </div>
 		<div class="col-sm-8">
+			{% if modelo.upload %}
+			<h3 class="card-title mb-0 p-10"> Variáveis Preditoras </h3>
+        	<div class="card">
+            	<div class="card-body">
+					<table class="table user-table table-hover">
+						<thead>
+							<tr>
+								<th class="border-top-0">
+									Variável Preditora
+								</th>
+							</tr>
+						</thead>
+						<tbody >
+							{% for vvv in listVars %}
+								<tr onclick="window.location='../../modelo/var/{{vvv.pk}}/edit/';">
+									<td>
+										{{vvv.variavel}}
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+			{% endif %}
 			{% if not modelo.upload %}
     		<h3 class="card-title mb-0 p-10"> Áreas Classificadas (Passo 2) </h3>
         	<div class="card">
@@ -83,7 +108,11 @@
 								Nova Área
 							</a>
 						</div>
-						<div class="col-sm-8" align="right">
+						<div class="col-sm-8" align="right"
+							{% if area_total > limite_area %}
+								style="color: red;"
+							{% endif %}
+						>
 							Área total: {{area_total}} m²
 						</div>
 					</div>
@@ -133,6 +162,9 @@
         </div>
     </div>
 	{% if not modelo.upload %}
+		{% if limite_area > area_total   %}
+
+
 	<a name="p3"></a>
 	<form method="POST" enctype="multipart/form-data">
 			                            {% csrf_token %}
@@ -533,7 +565,12 @@
 				</div>
 			</div>
 		</div>
-		{% else %}
+			{% else %} <!--comparação de tamanho de área -->
+		<div style="color:red;">
+			Atualmente o CLASSFITO se limita a área de {{limite_area}} metros quadrados
+		</div>
+			{% endif %} <!-- fim de comparação tamanho de área -->
+		{% else %} <!--comparação de modelo não upload -->
 		<div class="row">
 		<div class="col-sm-12">
 			<h3 class="card-title mb-0 p-10"> Modelo </h3>
@@ -578,7 +615,7 @@
 				</div>
 			</div>
 		</div>
-		{% endif %}
+		{% endif %} <!-- fim de comparação modelo não upload -->
 	</div>
 
 	</div>

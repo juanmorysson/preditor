@@ -155,6 +155,7 @@ def montar_kwargs_gdal(path, name, dst = 'EPSG:32722', src = 'EPSG:32722'):
 			  'srcSRS': src,
 			  'cropToCutline': True,
 			  }
+	print(path + name + '.geojson')
 	return kwargs
 
 def cortar_tif(path_mask, idmask, input, output):

@@ -42,10 +42,15 @@ class ArquivoModelo(models.Model):
     data_teste = models.DateTimeField(null=True, blank=True)
     acuraciaTeste = models.CharField(max_length=20, null=True)
 
+class VariavelModelo(models.Model):
+    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
+    variavel = models.CharField(max_length=20, null=True)
+
 class ImportanciaVariavel(models.Model):
     arquivoModelo = models.ForeignKey(ArquivoModelo, on_delete=models.CASCADE, null=False)
-    variavel = models.CharField(max_length=20, null=True)
+    variavel = models.ForeignKey(VariavelModelo, on_delete=models.CASCADE, null=True)
     importancia = models.CharField(max_length=20, null=True)
+
 
 class ClasseModelo(models.Model):
     classe = models.CharField(max_length=200, null=False, blank=False)

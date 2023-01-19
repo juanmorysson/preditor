@@ -280,6 +280,12 @@ def modelo_open(request, pk):
 				except:
 					print("area sem tamanho")
 
+	#Listar Variávais
+	listVars = []
+	variaveis = VariavelModelo.objects.filter(modelo=modelo)
+	for var in variaveis:
+		listVars.append(var)
+
 	#TODO listar repos só daquele sensor
 	repos = utils.list_repositorios(modelo.stack)
 	models = ArquivoModelo.objects.filter(modelo=modelo)
@@ -310,7 +316,8 @@ def modelo_open(request, pk):
 	s_resp = Satelite.objects.filter(responsavel=request.user)
 	for s in s_resp:
 		sensores.append(s)
-	return render(request, 'preditor/modelo_open.html', {'repo_local':repo_local, 'sensores':sensores, 'sensor':sensor, 'area_total':area_total,'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models})
+	limite_area = 1000000000 #m2
+	return render(request, 'preditor/modelo_open.html', {'repo_local':repo_local, 'limite_area': limite_area,  'sensores':sensores, 'sensor':sensor, 'area_total':area_total,'status':status,'modelo':modelo, 'error':error, 'classes':classes, 'vars': vars, 'areas':areas, 'repos':repos, 'models':models, 'tipo_models':tipo_models, 'listVars':listVars})
 
 def save_sensor(request, pk, pk_sensor):
 	modelo = Modelo.objects.get(pk=pk)
@@ -333,6 +340,7 @@ def excluir_arquivo(request, pk):
 	return redirect('modelo_open', pk=modelo.pk)
 
 def gerar_stacks_modelo (request, pk):
+	#TODO: Verificar Tile do stack selecionado de acordo com a área geral
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
 	stack = ""
@@ -411,7 +419,12 @@ def prepararDataFrameModelo(pk, percent):
 			val = nn.flatten()
 			vv = pd.Series(val)
 			dfArea[r.tag] = vv
+		print(len(dfArea))
 		dfArea = dfArea.dropna()
+		if (len(dfArea)==0):
+			erro = "Algum índice está retornando apenas valores nulos. - "+area.descricao
+			print(erro)
+			return
 		area.classe.total_dados = int(area.classe.total_dados) + len(dfArea)
 		area.classe.save()
 		total_dados = total_dados + len(dfArea)
@@ -424,11 +437,19 @@ def prepararDataFrameModelo(pk, percent):
 		y_test = pd.concat([y_test, yArea_test])
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
 	#target.reset_index(inplace=True)
+	#Deletar variáveis antigas:
+	mvs = VariavelModelo.objects.filter(modelo=modelo)
+	for m in mvs:
+		m.delete()
 	print("Gerando arquivo target")
 	delimiter =";"
 	head = ''
 	for item in target.columns:
 		head = head + delimiter + item
+		mv = VariavelModelo()
+		mv.modelo=modelo
+		mv.variavel=item
+		mv.save()
 	head = head[len(delimiter):]
 	np.savetxt(r''+path_model+"target_train.txt", target.values, fmt='%4f', delimiter=delimiter, header=head)
 	print("Gerando arquivo target test")
@@ -442,13 +463,22 @@ def prepararDataFrameModelo(pk, percent):
 	modelo.save()
 
 def prepararDataFrameStack(modelo_treinado, area, stack):
-	rms = Raster_Modelo.objects.filter(modelo=modelo_treinado.modelo)
+	vrvs = VariavelModelo.objects.filter(modelo=modelo_treinado.modelo)
+	#TODO: melhorar essa busca de satelite
 	s = "Sentinel" + stack[2:4]
 	sat = Satelite.objects.filter(descricao=s)[0]
 	df = pd.DataFrame()
-	for rm in rms:
+	for vr in vrvs:
 		path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta
-		r = rm.raster
+		var = vr.variavel
+		r = None
+		rs = Raster.objects.filter(satelite=modelo_treinado.modelo.sensor, band=var)
+		for r1 in rs:
+			r = r1
+		if len(rs)==0:
+			rs = Raster.objects.filter(satelite=modelo_treinado.modelo.sensor, tag=var)
+			for r1 in rs:
+				r = r1
 		nome = r.tag
 		if r.isIndex:
 			if r.formula is None:
@@ -458,8 +488,7 @@ def prepararDataFrameStack(modelo_treinado, area, stack):
 				path = path + '\\' + stack + '\\indices\\'
 		else:
 			path = path + '\\' + stack + '\\cortes\\'
-			rb = RasterBand.objects.get(satelite=sat, raster=r)
-			nome = rb.band
+			nome = r.band
 		raster = rasterio.open(path + nome + '.tif')
 		array = raster.read(1)
 		nn = np.array(array)
@@ -512,7 +541,12 @@ def classificar(request, arq_pk, area_pk, stack):
 	result_num = []
 	for r in result:
 		result_num.append(classes_num.loc[r,'num'])
-	gerarTiffPorDataFrame(result_num, path, bandReferencia, modelo_treinado.tipo.filename)
+	filename= "Classificador"
+	try:
+		filename = modelo_treinado.tipo.filename
+	except:
+		print("não há tipo arquivo")
+	gerarTiffPorDataFrame(result_num, path, bandReferencia, filename)
 	return redirect('classificar_page', arq_pk, area_pk, stack)
 
 def gerarTiffPorDataFrame(pd, path, rasterReferencia, name="Classificador"):
@@ -579,7 +613,11 @@ def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	else:
 		os.mkdir(path_model)
 	tipo = TipoArquivoModelo.objects.get(pk=pk_me)
-	model, importance = ia.treinar_modelo(target, y, tipo, max_depth)
+	list_cols = []
+	vms = VariavelModelo.objects.filter(modelo=modelo)
+	for vm in vms:
+		list_cols.append(vm.variavel)
+	model, importance = ia.treinar_modelo(target, y, tipo, max_depth, list_cols)
 	rms = Raster_Modelo.objects.filter(modelo=modelo)
 	print("Salvando arquivo")
 	#salvar treinamento
@@ -592,8 +630,9 @@ def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	arq_modelo.save()
 	print("Salvando Importancias")
 	list = []
-	for rm in rms:
-		list.append(rm.raster.tag)
+	variaveis = VariavelModelo.objects.filter(modelo=modelo)
+	for vv in variaveis:
+		list.append(vv)
 	for i, v in enumerate(importance):
 		imp = ImportanciaVariavel()
 		imp.arquivoModelo = arq_modelo
@@ -661,7 +700,7 @@ def ver_stacks_modelo (request, pk):
 			for file in filenames:
 				if file[:-8] == str(area.pk):
 					arqs.append(Arquivo(file, 'Mascara'))
-		for dirpath, dirnames, filenames in os.walk(os.getcwd() + '/arquivos/modelos/'+modelo.pasta+'/'+str(area.pk)+'/'):
+		for dirpath, dirnames, filenames in os.walk(os.getcwd() + '/arquivos/modelos/'+modelo.pasta+'/'+str(area.pk)+'/'+stack+'/'):
 			for file in filenames:
 				tipo = "Indice"
 				if file[-4:] == '.png':
@@ -718,6 +757,21 @@ def modelo_edit(request, pk):
 		form = ModeloForm(instance=modelo)
 	return render(request, 'preditor/modelo_edit.html', {'form': form})
 
+def var_modelo_edit(request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	var_modelo = VariavelModelo.objects.get(pk=pk)
+	if var_modelo.modelo.responsavel!=request.user:
+		return redirect('modelos')
+	if request.method == "POST":
+		form = VariavelModeloForm(request.POST, instance=var_modelo)
+		if form.is_valid():
+			var_modelo = form.save(commit=False)
+			var_modelo.save()
+			return redirect('modelo_open', pk=var_modelo.modelo.pk)
+	else:
+		form = VariavelModeloForm(instance=var_modelo)
+	return render(request, 'preditor/modelo_edit.html', {'form': form})
 
 def classe_modelo_new(request, pk):
 	if not request.user.is_authenticated:
@@ -887,7 +941,8 @@ def area_open(request, pk):
 		repos = utils.list_repositorios(tile = tiles[0])
 	else:
 		repos = utils.list_repositorios()
-	return render(request, 'preditor/area_open.html', {'tiles':tiles, 'mask':mask, 'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
+	limite_area = 1000000000  # m2
+	return render(request, 'preditor/area_open.html', {'tiles':tiles, 'mask':mask, 'limite_area':limite_area, 'projeto':projeto, 'area':area, 'my_map': m, 'dec':dec, 'alt':alt, 'repos':repos, 'area_m':area_m})
 
 def stack(request, pk, stack):
 	if not request.user.is_authenticated:
@@ -956,25 +1011,23 @@ def classificar_page(request, arq_pk, area_pk, stack):
 	for dirpath, dirnames, filenames in os.walk(path+'\\'+stack):
 		for file in filenames:
 			if (file[-3:] == "tif"):
-				vars_stack.append(file[:-4])
+				var = file[:-4]
+				rs = Raster.objects.filter(satelite=modelo_treinado.modelo.sensor, band=var)
+				for r in rs:
+					var = r.tag
+				vars_stack.append(var)
 	for item in os.listdir(path):
 		if (item[-3:] == "tif"):
 			vars_stack.append(item[:-4].upper())
 	print(vars_stack)
-	r_modelo = Raster_Modelo.objects.filter(modelo=modelo_treinado.modelo)
+	variaveis_modelo = VariavelModelo.objects.filter(modelo=modelo_treinado.modelo)
 	vars_modelo = []
 	valido = True
-	for r in r_modelo:
-		if r.raster.isIndex:
-			ok = vars_stack.__contains__(r.raster.tag.upper())
-		else:
-			sat = Satelite.objects.filter(descricao="Sentinel1C")[0]
-			rr = RasterBand.objects.filter(raster=r.raster, satelite=sat)[0]
-			tag = rr.band
-			ok = vars_stack.__contains__(tag.upper())
+	for r in variaveis_modelo:
+		ok = vars_stack.__contains__(r.variavel)
 		if ok == False:
 			valido = False
-		var = Arquivo(r.raster.tag, ok)
+		var = Arquivo(r.variavel, ok)
 		vars_modelo.append(var)
 	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
 
@@ -1202,6 +1255,7 @@ def uploadMaskModelo(request, pk):
 def upload_modelo(request):
 	return render(request, 'preditor/upload_modelo.html', {})
 def upload_modelo_save(request):
+	#TODO:Validar!!! Campos obrigatórios e cores diferentes
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')
 	if request.POST['nome_modelo'] == "":
@@ -1215,6 +1269,10 @@ def upload_modelo_save(request):
 	modelo.pasta=pasta
 	modelo.upload = True
 	modelo.save()
+	# salvar treinamento
+	arq_modelo = ArquivoModelo()
+	arq_modelo.modelo = modelo
+	arq_modelo.save()
 	for k, v in request.POST.lists():
 		if k[:4] == 'cor_':
 			classe = ClasseModelo()
@@ -1222,19 +1280,24 @@ def upload_modelo_save(request):
 			classe.cor = v[0]
 			classe.classe = k[4:]
 			classe.save()
+		if k[:4] == 'var_':
+			vari = VariavelModelo()
+			vari.modelo = modelo
+			vari.variavel = v[0]
+			vari.save()
 	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
 	if os.path.isdir(path_model):
 		print("path Já Criado")
 	else:
 		os.mkdir(path_model)
 	print("Salvando arquivo")
-	# salvar treinamento
-	arq_modelo = ArquivoModelo()
-	arq_modelo.modelo = modelo
-	arq_modelo.save()
 	#tipo = request.POST['tipo']
 	filename = str(arq_modelo.id) + '.sav'
-	joblib.dump(modelo, path_model + filename)
+	filename_temp = request.POST['arquivo']
+	path_temp = os.getcwd() + '\\arquivos\\temp\\'
+	arquivo = open(path_temp + filename_temp)
+	model = ia.ler_modelo_up(path_temp + filename_temp)
+	joblib.dump(model, path_model + filename)
 	return redirect('modelos')
 def uploadArquivoModelo(request):
 	if (request.FILES.get('modelo', False)==False):
@@ -1242,7 +1305,20 @@ def uploadArquivoModelo(request):
 		return redirect('/upload_modelo')
 	arquivo = request.FILES['modelo']
 	modelo = ia.ler_modelo_up(arquivo)
-	return render(request, 'preditor/upload_modelo.html', {'modelo':modelo})
+	listVars=[]
+	try:
+		listVars = modelo.feature_names_in_
+	except:
+		rangeV = range(1, modelo.n_features_in_+1)
+		for r in rangeV:
+			listVars.append("var_"+str(r))
+	path_temp = os.getcwd() + '\\arquivos\\temp\\'
+	filename_temp = secrets.token_hex(nbytes=6)
+	filename_temp = filename_temp + ".sav"
+	with open(path_temp+filename_temp, 'wb+') as destination:
+		for chunk in arquivo.chunks():
+			destination.write(chunk)
+	return render(request, 'preditor/upload_modelo.html', {'modelo':modelo, 'arquivo':filename_temp, 'listVars': listVars})
 def uploadPointsModelo(request, pk):
 	area = AreaModelo.objects.get(pk=pk)
 	modelo = area.classe.modelo
@@ -1377,7 +1453,8 @@ def cortar(request, pk, stack):
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
 	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-	corte_ok = corte(id, repo, path, path + '/../mask/')
+	path_mask = os.getcwd() + '\\arquivos\\projetos\\' + projeto.pasta + '\\' + area.pasta + '\\mask\\'
+	corte_ok = corte(id, repo, path, path_mask)
 	return redirect('stack', pk, stack)
 
 
@@ -1393,23 +1470,24 @@ def cortarModelo(pk, stack, rasters):
 		id = str(area.pk)
 		print("Iniciando área"+id)
 		path_area = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id
+		path_modelo = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
 		if os.path.isdir(path_area):
 			print("path Já Criado")
 		else:
 			os.mkdir(path_area)
 		path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id + '\\' + stack
-		corte_ok = corte(id, repo, path, path + '/../../masks/')
+		corte_ok = corte(id, repo, path, path_modelo+'masks\\')
 		if corte_ok:
 			for r in rasters:
 				if r.isIndex:
 					if r.tag == 'Declividade':
 						print("Cortando Declividade")
-						utils.cortar_tif(path_area + '/../masks/', id,
+						utils.cortar_tif(path_modelo + 'masks/', id,
 										 'repositorio/topodata/declividade_caldas.tif',
 										 path_area+'/declividade.tif')
 					if r.tag == 'Altitude':
 						print("Cortando Altitude")
-						utils.cortar_tif(path_area + '/../masks/', id,
+						utils.cortar_tif(path_modelo + 'masks/', id,
 										 'repositorio/topodata/altitude_caldas.tif',
 										 path_area+'/altitude.tif')
 					if (r.tag != 'Declividade' and r.tag != 'Altitude'):
@@ -1427,6 +1505,7 @@ def cortarModelo(pk, stack, rasters):
 			return False, "Erro ao cortar! Imagens fora da área de corte!"
 	return True, ""
 def corte(id, repo, path, path_mask):
+	print(path_mask)
 	t_file_name = -11
 	if (repo.level == '1C'):
 		t_file_name = -7
@@ -1453,7 +1532,7 @@ def corte(id, repo, path, path_mask):
 				if listRastes.__contains__(file[t_file_name:-4]):
 					input = dirpath + '\\' + file
 					out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
-					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
+					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs)
 					if processo == None:
 						return False
 	else:
@@ -1474,12 +1553,13 @@ def corte(id, repo, path, path_mask):
 				if (len(file) > 8):
 					if (file[-4:] == '.jp2'):
 						if listRastes.__contains__(file[t_file_name:-4]):
-							input = dirpath + '\\' + file
-							out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
-							processo = gdal.Warp(srcDSOrSrcDSTab=input,
+							if dirpath[-7:] != "QI_DATA":
+								input = dirpath + '\\' + file
+								out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
+								processo = gdal.Warp(srcDSOrSrcDSTab=input,
 									  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
-							if processo == None:
-								return False
+								if processo == None:
+									return False
 	return True
 def progress_callback(complete, message, self):
 	percent = math.floor(complete * 100)
