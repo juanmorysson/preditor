@@ -110,7 +110,7 @@ jQuery(document).ready(function($) {
                       title: {
                         display: true,
                         text: 'Dados de Testes'
-                      }
+                      },
                   }
                 });
 
@@ -234,4 +234,10 @@ function mostra_oculta(){
       x.style.display = "none";
   }
 
+}
+
+function limpar() {
+	console.log("foi...")
+	var element = document.getElementById("mapa");
+    element.innerHTML = "Aguarde..."
 }

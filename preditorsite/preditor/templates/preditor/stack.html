@@ -78,7 +78,7 @@
 							<table class="table user-table table-hover">
 									<tbody>
 										{% for indice in indices %}
-											<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/{{indice.desc|slice:'0:-4'}}/Projeto">
+											<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" onclick="limpar()" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/{{indice.desc|slice:'0:-4'}}/Projeto">
 												<td>
 													{{indice.desc}}
 												</td>
@@ -153,7 +153,7 @@
                 		<table class="table user-table table-hover">
 							<tbody >
 								{% for corte in cortes %}
-									<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Cortes_{{corte.desc}}/Projeto">
+									<tr data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Cortes_{{corte.desc}}/Projeto">
 										<td>
 											{{corte.desc}}.{{corte.tipo}} 
 										</td>

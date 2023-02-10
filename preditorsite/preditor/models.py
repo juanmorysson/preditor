@@ -87,6 +87,12 @@ class Area(models.Model):
     def __str__(self):
         return self.descricao
 
+class DadosClassificacao(models.Model):
+    area = models.ForeignKey(Area, on_delete=models.CASCADE, null=True)
+    arquivoModelo = models.ForeignKey(ArquivoModelo, on_delete=models.CASCADE, null=True)
+    stack = models.CharField(max_length=200, null=True)
+    classe = models.CharField(max_length=200, null=True)
+    quantidade = models.CharField(max_length=200, null=True)
 
 class Raster(models.Model):
     tag = models.CharField(max_length=200, unique=False)

@@ -371,7 +371,7 @@ def gerar_stacks_modelo (request, pk):
 		return redirect('modelo_open', pk)
 	corte_ok, desc_erro = cortarModelo(pk, stack, rasters)
 	if not corte_ok:
-		request.session['error'] = 'Não foi Possível Cortar a Imagem! Provavelmente a imagem não faz parte do polígono...'
+		request.session['error'] = desc_erro
 	return redirect('modelo_open', pk=pk)
 
 def prepararDataFrameModelo_Request(request, pk):
@@ -546,6 +546,25 @@ def classificar(request, arq_pk, area_pk, stack):
 		filename = modelo_treinado.tipo.filename
 	except:
 		print("não há tipo arquivo")
+	y = pd.Series(result)
+	print(y.head())
+	print(len(y))
+	tabela = y.value_counts()
+	ind = tabela.index
+	print(len(tabela))
+	i = 0
+	dcs = DadosClassificacao.objects.filter(area = area, arquivoModelo = modelo_treinado, stack = stack)
+	for d in dcs:
+		d.delete()
+	while i < len(tabela):
+		dc = DadosClassificacao()
+		dc.area = area
+		dc.arquivoModelo = modelo_treinado
+		dc.stack = stack
+		dc.classe = ind[i]
+		dc.quantidade = tabela[i]
+		dc.save()
+		i = i + 1
 	gerarTiffPorDataFrame(result_num, path, bandReferencia, filename)
 	return redirect('classificar_page', arq_pk, area_pk, stack)
 
@@ -858,9 +877,10 @@ def area_modelo_edit(request, pk):
 			with open(mask) as data_file:
 				geoms= json.loads(data_file.read())
 			obj = geoms['features'][0]['geometry']
+			location = obj['coordinates'][0][0]
 			area_m = c_area(obj)
 			m = folium.Map(
-        		location=[-17.7494, -48.6202],
+        		location=[location[1], location[0]],
         		tiles="cartodbpositron",
         		zoom_start=10,
         		)
@@ -920,10 +940,10 @@ def area_open(request, pk):
 	with open(mask) as data_file:
 		geoms= json.loads(data_file.read())
 	obj = geoms['features'][0]['geometry']
+	location = obj['coordinates'][0][0]
 	area_m = c_area(obj)
-	####mapa
 	m = folium.Map(
-		location=[-17.7494, -48.6202],
+		location=[location[1], location[0]],
 		tiles="cartodbpositron",
 		zoom_start=10,
 	)
@@ -1029,7 +1049,12 @@ def classificar_page(request, arq_pk, area_pk, stack):
 			valido = False
 		var = Arquivo(r.variavel, ok)
 		vars_modelo.append(var)
-	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
+	dcs = DadosClassificacao.objects.filter(area=area, arquivoModelo=modelo_treinado, stack=stack)
+	pxtotal = 0
+	for dc in dcs:
+		pxtotal = pxtotal + int(dc.quantidade)
+
+	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'pxtotal':pxtotal, 'dcs':dcs, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
 
 def projeto_new(request):
 	if not request.user.is_authenticated:
@@ -1117,10 +1142,10 @@ def download_page(request):
 			with open(mask) as data_file:
 				geoms = json.loads(data_file.read())
 			obj = geoms['features'][0]['geometry']
+			location = obj['coordinates'][0][0]
 			area_m = c_area(obj)
-			####mapa
 			m = folium.Map(
-				location=[-17.7494, -48.6202],
+				location=[location[1], location[0]],
 				tiles="cartodbpositron",
 				zoom_start=10,
 			)
@@ -1383,7 +1408,7 @@ def trescores(request):
 	####Visualização no folium
 	print("Visualização no folium...")
 	m = folium.Map(
-		location=[location[2], location[1]], 
+		location=[location[2], location[1]],
 		tiles='Stamen Terrain',
 		#tiles="cartodbpositron",
 		zoom_start=9
@@ -1502,7 +1527,8 @@ def cortarModelo(pk, stack, rasters):
 						calc.indice_write_tif(raster, src_ref, path +'\\indices\\', r.tag)
 			print("Finalizado ")
 		else:
-			return False, "Erro ao cortar! Imagens fora da área de corte!"
+			print("Erro ao cortar! Imagens fora da área de corte!")
+			return False, "Erro ao cortar! Imagens fora da área de corte! Área: "+area.descricao
 	return True, ""
 def corte(id, repo, path, path_mask):
 	print(path_mask)
@@ -1533,7 +1559,8 @@ def corte(id, repo, path, path_mask):
 					input = dirpath + '\\' + file
 					out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
 					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs)
-					if processo == None:
+					print(os.path.getsize(out))
+					if os.path.getsize(out) < 500:
 						return False
 	else:
 		path_input = ''
@@ -1558,7 +1585,8 @@ def corte(id, repo, path, path_mask):
 								out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
 								processo = gdal.Warp(srcDSOrSrcDSTab=input,
 									  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
-								if processo == None:
+								print(os.path.getsize(out))
+								if os.path.getsize(out) < 500:
 									return False
 	return True
 def progress_callback(complete, message, self):
@@ -1570,14 +1598,46 @@ def declividade_gerar(request, pk):
 	area = Area.objects.get(pk=pk)
 	projeto = Projeto.objects.get(pk=area.projeto.pk)
 	path = 'arquivos/projetos/'+projeto.pasta+'/'+area.pasta
+	### buscar extremidades máscara
+	path_mask = path+'/mask/'+str(area.pk)+'.geojson'
+	max_lat, min_lat, max_long, min_long = utils.extremidades_mascara(path_mask)
+	### percirrer rasters topodata
+	path_topo = 'repositorio/topodata/'
+	r_input = 'C_17S495SN.tif'
+	"""
+	for dirpath, dirnames, filenames in os.walk(path_topo):
+		for file in filenames:
+			if (file[-6:] == 'SN.tif'):
+				with rasterio.open(path_topo+file) as src:
+					band1 = src.read(1)
+					height = band1.shape[0]
+					width = band1.shape[1]
+					cols, rows = np.meshgrid(np.arange(width), np.arange(height))
+					xs, ys = rasterio.transform.xy(src.transform, rows, cols)
+					lons = np.array(xs)
+					lats = np.array(ys)
+					r_max_long = lons.max()
+					r_min_long = lons.min()
+					r_max_lat = lats.max()
+					r_min_lat = lats.min()
+					if (max_lat<r_max_lat):
+						if (min_lat>r_min_lat):
+							if (max_long<r_max_long):
+								if (min_long>r_min_long):
+									print("achei")
+									r_input = file
+									break
+	"""
 	#### Cortar com gdal
 	kwargs = utils.montar_kwargs_gdal(path+'/mask/', str(area.pk))
-	input = 'repositorio/topodata/declividade_caldas.tif'
+	input = path_topo+r_input
 	out =  path+'/declividade.tif'
+	print(input)
+	gdal.SetConfigOption('CHECK_DISK_FREE_SPACE', 'FALSE')
 	ds = gdal.Warp(srcDSOrSrcDSTab = input,
          destNameOrDestDS=out,
 		 **kwargs)
-
+	print("cortado")
 	src = rasterio.open(path+'/declividade.tif')
 	src_saida = src.read()
 	location = utils.convertToWGS84(src)
@@ -1749,10 +1809,10 @@ def preparar_download_sentinel(request):
 	with open(mask) as data_file:
 		geoms = json.loads(data_file.read())
 	obj = geoms['features'][0]['geometry']
+	location = obj['coordinates'][0][0]
 	area_m = c_area(obj)
-	####mapa
 	m = folium.Map(
-		location=[-17.7494, -48.6202],
+		location=[location[1], location[0]],
 		tiles="cartodbpositron",
 		zoom_start=10,
 	)
@@ -1989,9 +2049,13 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 			path = path_base + '\\'+str(area.pk)+'\\'
 			file = "altitude"
 	if (tipo == "Mascara"):
-		mask = path+str(area.pk)+".geojson"
+		mask = path + str(area.pk) + ".geojson"
+		with open(mask) as data_file:
+			geoms = json.loads(data_file.read())
+		obj = geoms['features'][0]['geometry']
+		location = obj['coordinates'][0][0]
 		m = folium.Map(
-			location=[-17.7494, -48.6202],
+			location=[location[1], location[0]],
 			tiles="cartodbpositron",
 			zoom_start=10,
 		)
@@ -2017,7 +2081,12 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 		if file =="":
 			file = tipo
 		src = rasterio.open(path+file+'.tif')
+		min_n = 0.0
 		src_saida = src.read()
+		if (tipo == "Declividade" or tipo == "Altitude"):
+			min_n = 0.0
+		else:
+			min_n = src_saida.min()
 		location = utils.convertToWGS84(src)
 		####Visualização no folium
 		print("Visualização no folium...")
@@ -2027,9 +2096,6 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 			#tiles="cartodbpositron",
 			zoom_start=12
 		)
-		min_n = src_saida.min()
-		if (tipo=="Declividade" or tipo=="Altitude"):
-			min_n = 0.0
 		if classi:
 			modelo = Modelo.objects.get(pk=2)
 			classes = ClasseModelo.objects.filter(modelo=modelo)
@@ -2112,7 +2178,6 @@ def mapateste_json(request, tag, sat='Sentinel2C'):
 
 	return JsonResponse({'my_map_modal': m, 'erro':erro})
 def summary_json(request, pk):
-	print("DDDDDDDDDDDD")
 	arq = ArquivoModelo.objects.get(pk=pk)
 	desc_arq = "Modelo: "+arq.modelo.descricao +" <br> Data de Treinamento: "+ str(arq.data_treinamento)
 	imps = ImportanciaVariavel.objects.filter(arquivoModelo=arq)
@@ -2120,7 +2185,7 @@ def summary_json(request, pk):
 	list_imp = []
 	for imp in imps:
 		list_imp.append(imp.importancia)
-		list.append(imp.variavel)
+		list.append(imp.variavel.variavel)
 	return JsonResponse({'arq': arq.tipo.descricao, 'desc_arq': desc_arq, 'imp':list_imp, 'vars': list})
 
 def dados_json(request, pk):

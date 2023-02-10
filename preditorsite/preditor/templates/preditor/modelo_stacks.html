@@ -46,7 +46,7 @@
             		<table class="table user-table table-hover">
 							<tbody id="body_edital">
 								{% for arq in al.lista %}
-									<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{al.id}}/{{modelo.stack}}/{{arq.tipo}}/Modelo">
+									<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" onclick="limpar()" data-href="{{al.id}}/{{modelo.stack}}/{{arq.tipo}}/Modelo">
 										<td>
 											{{arq.desc}}
 										</td>
@@ -60,7 +60,9 @@
 		{% endfor %}
 
     </div>
+<script  type = "text/javascript">
 
+</script>
 
 {% endblock %}
 

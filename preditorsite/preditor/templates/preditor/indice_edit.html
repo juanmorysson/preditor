@@ -27,7 +27,7 @@
         <p style="color:green;">{{sucesso}}</p>
 		<button type="submit" class="btn btn-success" formaction="{{action}}">Salvar</button>
         <button type="submit" class="btn btn-success" formaction="testarFormula">Testar</button>
-        <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}/{{sensor}}">
+        <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" onclick="limpar()" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}/{{sensor}}">
             Visualizar
         </a>
         <a href="/indices" class="btn btn-success">

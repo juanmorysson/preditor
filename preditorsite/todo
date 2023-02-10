@@ -1,6 +1,7 @@
 # Modelo:
     - Passo 3
-        - validar TILE da área total
+        - validar TILE da área total - ok
+        - testar declividade em áreas externas (outros tiles)
         - testar com imagem RGB
 
 

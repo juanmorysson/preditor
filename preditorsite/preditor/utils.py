@@ -155,9 +155,27 @@ def montar_kwargs_gdal(path, name, dst = 'EPSG:32722', src = 'EPSG:32722'):
 			  'srcSRS': src,
 			  'cropToCutline': True,
 			  }
-	print(path + name + '.geojson')
 	return kwargs
 
+def extremidades_mascara(path):
+	with open(path) as data_file:
+		geoms = json.loads(data_file.read())
+	obj = geoms['features'][0]['geometry']
+	locs = obj['coordinates'][0]
+	max_lat = -99999999
+	min_lat = 9999999
+	max_long = -99999999
+	min_long = 99999999
+	for loc in locs:
+		if loc[1] > max_lat:
+			max_lat = loc[1]
+		if loc[1] < min_lat:
+			min_lat = loc[1]
+		if loc[0] > max_long:
+			max_long = loc[0]
+		if loc[0] < min_long:
+			min_long = loc[0]
+	return max_lat, min_lat, max_long, min_long
 def cortar_tif(path_mask, idmask, input, output):
 	kwargs = montar_kwargs_gdal(path_mask, idmask)
 	input = input

@@ -35,7 +35,7 @@
 					<table class="table user-table table-hover">
 					<tbody >
 						{% for ar in dec %}
-							<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/none/Declividade/Projeto">
+							<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" onclick="limpar()" data-href="{{area.pk}}/none/Declividade/Projeto">
 								<td >
                     				{{ar|slice:"-15:"}}
                     			</td>
@@ -46,7 +46,7 @@
 	            	<a href="/declividade/gerar/{{ area.pk }}/" class="btn btn-primary">
 			        	Gerar
 			        </a>
-			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row btn btn-primary" data-href="{{area.pk}}/none/Declividade/Projeto">
+			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row btn btn-primary" onclick="limpar()" data-href="{{area.pk}}/none/Declividade/Projeto">
 			        	Vizualizar
 			        </a>
 		    	</div>
@@ -58,7 +58,7 @@
 					<table class="table user-table table-hover">
 						<tbody >
 							{% for ar in alt %}
-								<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/none/Altitude/Projeto">
+								<tr data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="clickable-row" data-href="{{area.pk}}/none/Altitude/Projeto">
 									<td >
 										{{ar|slice:"-12:"}}
 									</td>
@@ -69,7 +69,7 @@
 	            	<a href="/altitude/gerar/{{ area.pk }}/" class="btn btn-primary">
 			        	Gerar
 			        </a>
-			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row btn btn-primary" data-href="{{area.pk}}/none/Altitude/Projeto">
+			        <a href="" data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="clickable-row btn btn-primary" data-href="{{area.pk}}/none/Altitude/Projeto">
 			        	Vizualizar
 			        </a>
 		    	</div>

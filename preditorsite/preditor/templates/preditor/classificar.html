@@ -18,20 +18,94 @@
 <div class="container-fluid">
     <div class="row">
         <!-- column -->
-        <div class="col-sm-5">
-			<h3 class="card-title mb-0 p-10"> Compatibilidade do modelo </h3>
+		<div class="col-sm-9">
+			<div class="row">
+				<div class="col-sm-7">
+					<h3 class="card-title mb-0 p-10"> Compatibilidade do modelo </h3>
+					<div class="card">
+						<div class="card-body">
+							Lista de Variáveis do Modelo Treinado:
+							<table class="table user-table table-hover">
+								<tbody>
+									{% for var in vars_modelo %}
+										<tr>
+											<td>
+												{{var.desc}}
+											</td>
+											<td>
+												{{var.tipo}}
+											</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-5">
+					<h3 class="card-title mb-0 p-10"> Classificação </h3>
+					<div class="card">
+						<div class="card-body">
+							{% if valido %}
+							<a href="/classificar/{{ modelo_treinado.pk }}/{{ area.pk }}/{{repo.sat}}{{repo.level}}{{repo.data}}" class="btn btn-primary">
+								Classificar
+							</a>
+							<table class="table user-table table-hover">
+									<tbody>
+										{% for mod in classificacoes %}
+											<tr data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto">
+												<td>
+													{{mod.desc|slice:':-4'}}
+													<a href="" data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="btn btn-primary clickable-row" data-href=="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto" >
+														Visualizar
+													</a>
+												</td>
+											</tr>
+										{% endfor %}
+									</tbody>
+							</table>
+							{% else %}
+							O Stack não contém todas a variáveis que o modelo exige!
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-12">
+			<h3 class="card-title mb-0 p-10"> Resultado da Classificação </h3>
 			<div class="card">
 				<div class="card-body">
-					Lista de Variáveis do Modelo Treinado:
 					<table class="table user-table table-hover">
+						<thead>
+							<tr>
+								<th class="border-top-0">
+									Classe
+								</th>
+								<th class="border-top-0">
+									Quantidade de Pixels
+								</th>
+								<th class="border-top-0">
+									Área aproximada
+								</th>
+								<th class="border-top-0">
+									Percentual de Classificação
+								</th>
+							</tr>
+						</thead>
 						<tbody>
-							{% for var in vars_modelo %}
+							{% for dc in dcs %}
 								<tr>
 									<td>
-										{{var.desc}}
+										{{dc.classe}}
 									</td>
 									<td>
-										{{var.tipo}}
+										{{dc.quantidade}}
+									</td>
+									<td>
+										{% widthratio dc.quantidade|floatformat:"0" 1 10 %} m²
+									</td>
+									<td>
+										{% widthratio dc.quantidade|floatformat:"0" pxtotal 100 %} %
 									</td>
 								</tr>
 							{% endfor %}
@@ -40,30 +114,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="col-sm-4">
-			<h3 class="card-title mb-0 p-10"> Classificação </h3>
-			<div class="card">
-				<div class="card-body">
-					{% if valido %}
-					<a href="/classificar/{{ modelo_treinado.pk }}/{{ area.pk }}/{{repo.sat}}{{repo.level}}{{repo.data}}" class="btn btn-primary">
-						Classificar
-					</a>
-					<table class="table user-table table-hover">
-							<tbody>
-								{% for mod in classificacoes %}
-									<tr data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto">
-										<td>
-											{{mod.desc|slice:':-4'}}
-										</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-					</table>
-					{% else %}
-					O Stack não contém todas a variáveis que o modelo exige!
-					{% endif %}
-				</div>
-			</div>
+
 		</div>
 		<div class="col-sm-3">
         	<h3 class="card-title mb-0 p-10">Área e Modelo</h3>
