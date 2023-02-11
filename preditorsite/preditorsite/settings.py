@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-*^@g=$zcvm=u#13a&+-fu&rnwc7bd#%_%fl0ceot*)l7$t_42e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['168.228.221.107']
+ALLOWED_HOSTS = ['168.228.221.107', 'classfito.app.br', '127.0.0.1']
 
 
 # Application definition
@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'django_extensions'
 ]
 
 SITE_ID = 1

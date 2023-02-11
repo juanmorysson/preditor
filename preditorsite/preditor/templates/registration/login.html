@@ -9,6 +9,7 @@
 {% load socialaccount %}
 <div class="container">
   <div class="text-left">
+    <center>
     <div class="login text-center">
       <div id="mini">
         <h2 class="container titulo-depoimentos">Login</h2>
@@ -25,11 +26,19 @@
           <p>Por favor faça o login.</p>
         {% endif %}
       {% endif %}
-      <br>
-      <a href="{% provider_login_url 'google' %}"><button type="button" class="btn btn-info" style="width: 100%;"><i class="mdi me-2 mdi-google-plus" style="font-size: 20px;">Login With Google</i></button></a>
+      <a href="{% provider_login_url 'google' %}">
+                <img
+                  src="{% static 'assets/images/g.png' %}"
+                  alt="homepage"
+                  class="dark-logo"
+                  style="text-align: left;"
+                />
+
+        <button type="button" class="btn btn-info" style="width: 100%;"><i class="mdi me-2 mdi-google-plus" style="font-size: 20px;"> Login com Google</i></button></a>
         <br>
         <br>
     </div>
+      </center>
   </div>
     <!--
     <div class="col-sm-6">
