@@ -197,7 +197,12 @@ def exportRGBAClasse(path, file, colors):
 			if p == 0:
 				color = (0, 0, 0, 0)
 			else:
-				color = (colors.loc[p,'r'], colors.loc[p,'g'], colors.loc[p,'b'],255)
+				try:
+					color = (colors.loc[p,'r'], colors.loc[p,'g'], colors.loc[p,'b'],255)
+				except:
+					print(p)
+					color = (0, 0, 0, 0)
+
 			image.putpixel((x, y), color)
 	outfile = os.path.join(path, file +".png")
 	image.save(outfile, "PNG", quality=100)

@@ -170,7 +170,11 @@
 			                            {% csrf_token %}
     <div class="row">
         <div class="col-sm-12">
-        	<h3 class="card-title mb-0 p-10"> Imagens e Variáveis para o Modelo (Passo 3) </h3>
+        	<h3 class="card-title mb-0 p-10"> Imagens e Variáveis para o Modelo (Passo 3)
+			<button type="submit" onclick="alert('É recomendado o uso do Sentinel Level 2A pois “o processamento de Nível 2A inclui uma classificação de cena e uma correção atmosférica aplicada a produtos de ortoimagem de topo da atmosfera (TOA Top-Of-Atmosphere) Nível 1C” (ESA, 2022)');" class="btn">
+			     <i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+			</button>
+				</h3>
 			<div style="color:red;">{{error}}</div>
 			<div class="card">
 				<div class="card-body">
@@ -248,15 +252,18 @@
 				{% else %}
             	<div class="card-body" >
 					<div class="row">
-						<div class="col-sm-8">
+						<div class="col-sm-7">
 							Sentinel: Selecionar data:
 						</div>
-						<div class="col-sm-4" align="right">
+						<div class="col-sm-5" align="right">
 							<form method="POST">
 								{% csrf_token %}
 									<input type="hidden" name="mask_hidden" value="{{mask}}">
 								<button type="submit" formaction="/download_page" class="btn btn-secondary">
 									Download
+								</button>
+								<button type="submit" onclick="alert('As áreas demarcadas no passo anterior devem estar contidas num único TILE a ser escolhido agora');" class="btn">
+									<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
 								</button>
 							</form>
 						</div>
@@ -331,6 +338,9 @@
         	<div class="card">
             	<div class="card-body">
             		Ações:
+					<button type="submit" onclick="alert('O procedimento gerar stack irá aplicar a máscara de cada área em cada banda do repositório escolhito e gerar somente os índices escolhidos. O resultado pode ser visualizado no botão Visualizar Stacks');" class="btn">
+						<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+					</button>
 					<button type="submit" formaction="/modelo/gerar_stacks/{{ modelo.pk }}/#p3" class="btn btn-primary m-10">
 			             Gerar Stack
 			        </button>
@@ -381,6 +391,9 @@
 				<div class="card">
 					<div class="card-body">
 						Ações:
+						<button type="submit" onclick="alert('O procedimento Preparar Dados irá converter todos os dados dos rasters gerados no passo anterior em um DataFrame de Treinamento e um DataFrame de Testes. A divisão dos dados é feita de forma aleatória.');" class="btn">
+							<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+						</button>
 						<br>
 						<button type="submit" formaction="/modelo/prepararDF/{{ modelo.pk }}#p4" class="btn btn-primary m-10">
 			             	Preparar Dados
@@ -410,7 +423,9 @@
 								Random Forest Classificator
 								<div class="row">
 									<div class="col-sm-4 col-4">
-
+										<button type="submit" onclick="alert('Por padrão, a plataforma utiliza como critério de medida de qualidade da divisão da árvore, o índice de Gini.');" class="btn">
+											<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+										</button>
 									</div>
 									<div class="col-sm-8 col-8">
 										Galhos:

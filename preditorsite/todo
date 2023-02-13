@@ -4,6 +4,9 @@
         - testar declividade em áreas externas (outros tiles)
         - testar com imagem RGB
 
+***********OBS
+    ao classificar com declividade tá dando eero no tamaho do DF
+    a classificação não está com as cores do modelo
 
 # Treinamento
     - relatório de evolução por modelo
@@ -27,7 +30,6 @@
 	        - possibilitar mudar gradiente de cores (na tela anterior???)
 	        - possibilitar ajutar os intervalos de valores para cada cor
     # Cadastrar Fórmulas
-        - adicionar formulas para outros sensores
         - testar formulas com outros operadores
 	# Demarcar área
 		- deixar botão mais vizível
@@ -35,13 +37,6 @@
 	# download de imagens de satélite
 		- corrigir o retorno do satelite Verificar ***************
 		- fazer o download a partir dos dados de um modelo (juntar os poligonos e setar mascara)
-	# extrair imagens da área
-*				- fazer busca por data
-			- verificar percentual de nuvens
-				- escolher visualmente? - ok
-				- calcular ?
-			- gerar stack por índices
-				- outros índices
 
 
 
@@ -61,5 +56,3 @@
 	# Outras funcionalidades (não ligadas a projetos):
 		- trÊs cores
 
-	# ver qual o melhor produto - ok
-		1c ou 2A ou 2B - usar 2A pq corrige sobre TOA

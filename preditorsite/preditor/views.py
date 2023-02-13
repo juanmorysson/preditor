@@ -292,6 +292,10 @@ def modelo_open(request, pk):
 	tipo_models = TipoArquivoModelo.objects.all()
 	repo_local=[]
 	if modelo.sensor.pk>2:
+		if os.path.isdir(path+'\\repositorio\\'):
+			print("path Já Criado")
+		else:
+			os.mkdir(path+'\\repositorio\\')
 		repo_local=utils.list_filesinfolder(path+'\\repositorio\\')
 
 	target_ok = False
@@ -565,6 +569,7 @@ def classificar(request, arq_pk, area_pk, stack):
 		dc.quantidade = tabela[i]
 		dc.save()
 		i = i + 1
+	print(result_num.__len__())
 	gerarTiffPorDataFrame(result_num, path, bandReferencia, filename)
 	return redirect('classificar_page', arq_pk, area_pk, stack)
 
@@ -579,8 +584,12 @@ def gerarTiffPorDataFrame(pd, path, rasterReferencia, name="Classificador"):
 			jj = []
 			for k in j:
 				if k!=0:
-					k=pd[l]
+					try:
+						k=pd[l]
+					except:
+						print(l)
 					l=l+1
+
 				jj.append(k)
 			ii.append(jj)
 		array_classe.append(ii)
@@ -1038,8 +1047,7 @@ def classificar_page(request, arq_pk, area_pk, stack):
 				vars_stack.append(var)
 	for item in os.listdir(path):
 		if (item[-3:] == "tif"):
-			vars_stack.append(item[:-4].upper())
-	print(vars_stack)
+			vars_stack.append(item[:-4].capitalize())
 	variaveis_modelo = VariavelModelo.objects.filter(modelo=modelo_treinado.modelo)
 	vars_modelo = []
 	valido = True
@@ -1598,13 +1606,16 @@ def declividade_gerar(request, pk):
 	area = Area.objects.get(pk=pk)
 	projeto = Projeto.objects.get(pk=area.projeto.pk)
 	path = 'arquivos/projetos/'+projeto.pasta+'/'+area.pasta
+	kwargs = utils.montar_kwargs_gdal(path+'/mask/', str(area.pk))
+
+
+	"""
 	### buscar extremidades máscara
 	path_mask = path+'/mask/'+str(area.pk)+'.geojson'
 	max_lat, min_lat, max_long, min_long = utils.extremidades_mascara(path_mask)
 	### percirrer rasters topodata
 	path_topo = 'repositorio/topodata/'
 	r_input = 'C_17S495SN.tif'
-	"""
 	for dirpath, dirnames, filenames in os.walk(path_topo):
 		for file in filenames:
 			if (file[-6:] == 'SN.tif'):
@@ -1627,13 +1638,13 @@ def declividade_gerar(request, pk):
 									print("achei")
 									r_input = file
 									break
-	"""
-	#### Cortar com gdal
-	kwargs = utils.montar_kwargs_gdal(path+'/mask/', str(area.pk))
 	input = path_topo+r_input
-	out =  path+'/declividade.tif'
-	print(input)
 	gdal.SetConfigOption('CHECK_DISK_FREE_SPACE', 'FALSE')
+	"""
+	#versão valida
+	input = 'repositorio/topodata/declividade_caldas.tif'
+
+	out =  path+'/declividade.tif'
 	ds = gdal.Warp(srcDSOrSrcDSTab = input,
          destNameOrDestDS=out,
 		 **kwargs)
