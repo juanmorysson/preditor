@@ -100,7 +100,7 @@ def convertToWGS84(src):
 
 def list_repositorios(stack_marked = '', tile = None):
 	print(stack_marked)
-	pathRepositorio = os.getcwd()+'\\repositorio\\sentinel'
+	pathRepositorio = os.getcwd()+'/repositorio/sentinel'
 	repos = []
 	for item in os.listdir(pathRepositorio):
 		if os.path.isfile(item):

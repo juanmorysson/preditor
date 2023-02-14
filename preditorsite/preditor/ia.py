@@ -53,7 +53,7 @@ def treinar_modelo(target, y, tipo, max_depth, list_cols = None):
 	return model, importance
 
 def ler_modelo_arquivo(arq):
-	path = os.getcwd() +"\\arquivos\\modelos\\"+arq.modelo.pasta+"\\modelos\\"
+	path = os.getcwd() +"/arquivos/modelos/"+arq.modelo.pasta+"/modelos/"
 	filename = ""
 	try:
 		filename = arq.tipo.filename
@@ -108,7 +108,7 @@ def ler_modelo_R():
 	pandas2ri.activate()
 	anndata2ri.activate()
 	readRDS = robjects.r['readRDS']
-	df = readRDS(os.getcwd()+'\\modelos\\modelo_rf.rds')
+	df = readRDS(os.getcwd()+'/modelos/modelo_rf.rds')
 	with localconverter(numpy2ri.converter):
 		pandas_df_2_r = robjects.conversion.py2rpy(df)
 	#df = robjects.conversion.py2rpy(df)

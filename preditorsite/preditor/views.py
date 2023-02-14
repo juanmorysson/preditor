@@ -136,7 +136,7 @@ def indice_edit(request, pk):
 	    form = IndiceForm(request.user, instance=i)
 	rasters = Raster.objects.filter(isIndex=False, publica=True)
 	rasters = list(rasters)
-	r_resp = Raster.objects.filter(responsavel=request.user)
+	r_resp = Raster.objects.filter(responsavel=request.user, isIndex=False)
 	for r in r_resp:
 		rasters.append(r)
 	list_sat = []
@@ -199,14 +199,14 @@ def indice_testarFormula(request, pk=0):
 			list_rasters.append((rr.satelite, list_r))
 	return render(request, 'preditor/indice_edit.html', {'form': form, 'sensor':sensor, 'rasters':rasters, 'list_rasters':list_rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
 def testeFormula(sat, formula, tag):
-	path = os.getcwd() + '\\arquivos\\testes\\'+sat.descricao
-	src_ref = rasterio.open(path + '\\cortes\\'+sat.bandReferencia+'.tif')
+	path = os.getcwd() + '/arquivos/testes/'+sat.descricao
+	src_ref = rasterio.open(path + '/cortes/'+sat.bandReferencia+'.tif')
 	try:
 		raster = calc.indice_calc_formula(src_ref, sat, formula, path)
 	except:
 		print("Erro na fórmula")
 		return False
-	calc.indice_write_tif(raster, src_ref, path +'\\', tag)
+	calc.indice_write_tif(raster, src_ref, path +'/', tag)
 	return True
 def erroFormula(user, sat, formula):
 	rasters = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
@@ -251,7 +251,7 @@ def modelo_open(request, pk):
 	else:
 		del request.session['error']
 
-	path = os.getcwd()+'\\arquivos\\modelos\\'+modelo.pasta
+	path = os.getcwd()+'/arquivos/modelos/'+modelo.pasta
 	classes = ClasseModelo.objects.filter(modelo=modelo)
 	sensor = Satelite.objects.get(pk=2)
 	if modelo.sensor is not None:
@@ -292,11 +292,11 @@ def modelo_open(request, pk):
 	tipo_models = TipoArquivoModelo.objects.all()
 	repo_local=[]
 	if modelo.sensor.pk>2:
-		if os.path.isdir(path+'\\repositorio\\'):
+		if os.path.isdir(path+'/repositorio/'):
 			print("path Já Criado")
 		else:
-			os.mkdir(path+'\\repositorio\\')
-		repo_local=utils.list_filesinfolder(path+'\\repositorio\\')
+			os.mkdir(path+'/repositorio/')
+		repo_local=utils.list_filesinfolder(path+'/repositorio/')
 
 	target_ok = False
 	y_ok = False
@@ -338,7 +338,7 @@ def excluir_arquivo(request, pk):
 	if modelo.responsavel!=request.user:
 		return redirect('modelos')
 	filename = arq.tipo.filename + str(arq.id) + '.sav'
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/modelos/'
 	os.remove(path_model + filename)
 	arq.delete()
 	return redirect('modelo_open', pk=modelo.pk)
@@ -405,17 +405,17 @@ def prepararDataFrameModelo(pk, percent):
 		id = str(area.pk)
 		print("Iniciando área" + id)
 		for rm in rms:
-			path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id
+			path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/' + id
 			r = rm.raster
 			nome = r.tag
 			if r.isIndex:
 				if r.formula is None:
-					path = path + '\\'
+					path = path + '/'
 					nome = nome.lower()
 				else:
-					path = path + '\\' + modelo.stack + '\\indices\\'
+					path = path + '/' + modelo.stack + '/indices/'
 			else:
-				path = path + '\\' + modelo.stack + '\\cortes\\'
+				path = path + '/' + modelo.stack + '/cortes/'
 				nome = r.band
 			raster = rasterio.open(path + nome + '.tif')
 			array = raster.read(1)
@@ -439,7 +439,7 @@ def prepararDataFrameModelo(pk, percent):
 		yArea_test = pd.Series([area.classe.classe] * len(test.index))
 		y = pd.concat([y, yArea_train])
 		y_test = pd.concat([y_test, yArea_test])
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'
 	#target.reset_index(inplace=True)
 	#Deletar variáveis antigas:
 	mvs = VariavelModelo.objects.filter(modelo=modelo)
@@ -473,7 +473,7 @@ def prepararDataFrameStack(modelo_treinado, area, stack):
 	sat = Satelite.objects.filter(descricao=s)[0]
 	df = pd.DataFrame()
 	for vr in vrvs:
-		path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta
+		path = os.getcwd() + '/arquivos/projetos/' + area.projeto.pasta + '/' + area.pasta
 		var = vr.variavel
 		r = None
 		rs = Raster.objects.filter(satelite=modelo_treinado.modelo.sensor, band=var)
@@ -486,12 +486,12 @@ def prepararDataFrameStack(modelo_treinado, area, stack):
 		nome = r.tag
 		if r.isIndex:
 			if r.formula is None:
-				path = path + '\\'
+				path = path + '/'
 				nome = nome.lower()
 			else:
-				path = path + '\\' + stack + '\\indices\\'
+				path = path + '/' + stack + '/indices/'
 		else:
-			path = path + '\\' + stack + '\\cortes\\'
+			path = path + '/' + stack + '/cortes/'
 			nome = r.band
 		raster = rasterio.open(path + nome + '.tif')
 		array = raster.read(1)
@@ -516,15 +516,15 @@ def classificar(request, arq_pk, area_pk, stack):
 	df, sat = prepararDataFrameStack(modelo_treinado, area, stack)
 	print(df.shape)
 	result = ia.classificar(modelo, df)
-	path_corte = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\cortes\\'
+	path_corte = os.getcwd() + '/arquivos/projetos/' + area.projeto.pasta + '/' + area.pasta + '/' + stack + '/cortes/'
 	bandReferencia = rasterio.open(path_corte+sat.bandReferencia+'.tif')
-	path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao'
+	path = os.getcwd() + '/arquivos/projetos/' + area.projeto.pasta + '/' + area.pasta + '/' + stack + '/classificacao'
 	if os.path.isdir(path):
 		print("path Já Criado")
 	else:
 		os.mkdir(path)
-	path = os.getcwd() + '\\arquivos\\projetos\\' + area.projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\classificacao\\' + str(
-		modelo_treinado.pk) + '\\'
+	path = os.getcwd() + '/arquivos/projetos/' + area.projeto.pasta + '/' + area.pasta + '/' + stack + '/classificacao/' + str(
+		modelo_treinado.pk) + '/'
 	if os.path.isdir(path):
 		print("path Já Criado")
 	else:
@@ -613,7 +613,7 @@ def treinar_Request(request, pk):
 	return redirect('modelo_open', pk=pk)
 def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	modelo = Modelo.objects.get(pk=pk)
-	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta
 	target_ok = False
 	y_ok = False
 	for item in os.listdir(path):
@@ -628,14 +628,14 @@ def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	else:
 		prepararDataFrameModelo(pk,percent)
 	#ler arquivos
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'
 	print("Lendo target")
 	target = np.loadtxt(r''+path_model+"target_train.txt", delimiter=";")
 	print("Lendo y")
-	y = np.loadtxt(r''+path_model+"y_train.txt", dtype='str', delimiter="&&")
+	y = np.loadtxt(r''+path_model+"y_train.txt", dtype='str', delimiter=";")
 	#Treinar Modelo
 	print("Treinando modelo" + str(pk_me))
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/modelos/'
 	if os.path.isdir(path_model):
 		print("path Já Criado")
 	else:
@@ -672,15 +672,15 @@ def treinar(percent, pk, pk_me, max_depth, loop_cross):
 	validar(loop_cross, arq_modelo)
 def validar(loop_cross, arq_modelo):
 	modelo = arq_modelo.modelo
-	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta
 	tipo = arq_modelo.tipo
 	model = ia.ler_modelo_arquivo(arq_modelo)
 	# ler arquivos
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'
 	print("Lendo target")
 	target = np.loadtxt(r'' + path_model + "target_train.txt", delimiter=";")
 	print("Lendo y")
-	y = np.loadtxt(r'' + path_model + "y_train.txt", dtype='str', delimiter="&&")
+	y = np.loadtxt(r'' + path_model + "y_train.txt", dtype='str', delimiter=";")
 	mean, menor, maior = ia.validar_modelo(model, target, y, loop_cross)
 	#salvar teste
 	arq_modelo.loop_cross = loop_cross
@@ -696,15 +696,15 @@ def testar(request, pk):
 	modelo = arq_modelo.modelo
 	if modelo.responsavel!=request.user:
 		return redirect('modelos')
-	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
+	path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta
 	tipo = arq_modelo.tipo
 	model = ia.ler_modelo_arquivo(arq_modelo)
 	# ler arquivos
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'
 	print("Lendo target")
 	target_test = np.loadtxt(r'' + path_model + "target_test.txt", delimiter=";")
 	print("Lendo y")
-	y_test = np.loadtxt(r'' + path_model + "y_test.txt", dtype='str', delimiter="&&")
+	y_test = np.loadtxt(r'' + path_model + "y_test.txt", dtype='str', delimiter=";")
 	result = ia.testar_modelo(model, target_test, y_test)
 	#salvar teste
 	arq_modelo.data_teste = timezone.now()
@@ -744,6 +744,19 @@ def ver_stacks_modelo (request, pk):
 						if file=="altitude.tif":
 							tipo="Altitude"
 					arqs.append(Arquivo(file, tipo))
+		for dirpath, dirnames, filenames in os.walk(os.getcwd() + '/arquivos/modelos/'+modelo.pasta+'/'+str(area.pk)+'/'):
+			for file in filenames:
+				tipo = "Indice"
+				if file[-4:] == '.png':
+					continue
+				else:
+					if file=="declividade.tif":
+						tipo="Declividade"
+						arqs.append(Arquivo(file, tipo))
+					if file=="altitude.tif":
+						tipo="Altitude"
+						arqs.append(Arquivo(file, tipo))
+
 		areaList = AreaList(area.pk, area.descricao, arqs)
 		list.append(areaList)
 	return render(request, 'preditor/modelo_stacks.html', {'modelo':modelo, 'list':list})
@@ -866,7 +879,7 @@ def area_modelo_edit(request, pk):
 		error = ''
 	else:
 		del request.session['error']
-	path = os.getcwd()+'\\arquivos\\modelos\\'+area.classe.modelo.pasta+'\\masks\\'
+	path = os.getcwd()+'/arquivos/modelos/'+area.classe.modelo.pasta+'/masks/'
 	mask = path+str(area.pk)+".geojson"
 	m = None
 	if(request.method == "POST"):
@@ -916,7 +929,7 @@ def projeto_open(request, pk, ancora="p4"):
 	else:
 		del request.session['error']
 	areas = Area.objects.filter(projeto=projeto)
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta
 	l2 = len(path)
 	shapes = []
 	for dirpath, dirnames, filenames in os.walk(path):
@@ -939,8 +952,8 @@ def area_open(request, pk):
 	projeto = area.projeto
 	if projeto.responsavel != request.user:
 		return redirect('projetos')
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta
-	mask = path+"\\mask\\"+str(area.pk)+".geojson"
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta
+	mask = path+"/mask/"+str(area.pk)+".geojson"
 	#calculando área m2
 	if os.path.isfile(mask):
 		print("mask ok")
@@ -991,10 +1004,10 @@ def stack(request, pk, stack):
 	for m in meus_indices:
 		r_indices.append(m)
 
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-	l = len(path+'\\cortes')
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'+stack
+	l = len(path+'/cortes')
 	cortes = []
-	for dirpath, dirnames, filenames in os.walk(path+'\\cortes'):
+	for dirpath, dirnames, filenames in os.walk(path+'/cortes'):
 		for file in filenames:
 			arquivo = Arquivo("","")
 			arquivo.tipo = file[-3:]
@@ -1003,8 +1016,8 @@ def stack(request, pk, stack):
 				cortes.append(arquivo)
 	indices = []
 	if len(cortes) > 0:
-		l = len(path+'\\indices')
-		for dirpath, dirnames, filenames in os.walk(path+'\\indices'):
+		l = len(path+'/indices')
+		for dirpath, dirnames, filenames in os.walk(path+'/indices'):
 			for file in filenames:
 				arquivo = Arquivo("","")
 				arquivo.tipo = file[-3:]
@@ -1027,9 +1040,9 @@ def classificar_page(request, arq_pk, area_pk, stack):
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta
 	classificacoes = []
-	for dirpath, dirnames, filenames in os.walk(path+'\\'+stack+'\\classificacao\\'+str(arq_pk)):
+	for dirpath, dirnames, filenames in os.walk(path+'/'+stack+'/classificacao/'+str(arq_pk)):
 		for file in filenames:
 			arquivo = Arquivo("","")
 			arquivo.tipo = file[-3:]
@@ -1037,7 +1050,7 @@ def classificar_page(request, arq_pk, area_pk, stack):
 				arquivo.desc = file
 				classificacoes.append(arquivo)
 	vars_stack = []
-	for dirpath, dirnames, filenames in os.walk(path+'\\'+stack):
+	for dirpath, dirnames, filenames in os.walk(path+'/'+stack):
 		for file in filenames:
 			if (file[-3:] == "tif"):
 				var = file[:-4]
@@ -1061,8 +1074,12 @@ def classificar_page(request, arq_pk, area_pk, stack):
 	pxtotal = 0
 	for dc in dcs:
 		pxtotal = pxtotal + int(dc.quantidade)
-
-	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'pxtotal':pxtotal, 'dcs':dcs, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
+		arq = dc.arquivoModelo
+	classes = ClasseModelo.objects.filter(modelo=arq.modelo)
+	cores=[]
+	for c in classes:
+		cores.append(c.cor + c.classe)
+	return render(request, 'preditor/classificar.html', {'projeto':projeto, 'cores':cores, 'pxtotal':pxtotal, 'dcs':dcs, 'area':area, 'valido':valido, 'classificacoes':classificacoes, 'repo':repo, 'modelo_treinado':modelo_treinado, 'vars_modelo':vars_modelo })
 
 def projeto_new(request):
 	if not request.user.is_authenticated:
@@ -1201,7 +1218,7 @@ def uploadMask(request, pk):
 	if (mask.name[-8:]!='.geojson'):
 		request.session['error']='Adicione um arquivo Geojson!'
 		return redirect('/projeto/'+str(projeto.pk))
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\mask\\'
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/mask/'
 	with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
 		for chunk in mask.chunks():
 			destination.write(chunk)
@@ -1217,7 +1234,7 @@ def uploadPoints(request, pk):
 	if (arquivo.name[-4:]!='.csv'):
 		request.session['error']='Adicione um arquivo .csv!'
 		return redirect('/projeto/'+str(projeto.pk))
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\mask\\'
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/mask/'
 	with default_storage.open(path+str(pk)+'.csv', 'wb+') as destination:
 		for chunk in arquivo.chunks():
 			destination.write(chunk)
@@ -1240,7 +1257,7 @@ def uploadImageRepositorio(request, pk):
 		return redirect('/modelo/'+str(pk)+'/')
 	imagem = request.FILES['imagem']
 	tipo = request.POST['tipoImagem']
-	path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\repositorio\\'
+	path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/repositorio/'
 	if os.path.isdir(path):
 		print("path Já Criado")
 	else:
@@ -1273,7 +1290,7 @@ def uploadMaskModelo(request, pk):
 	if (mask.name[-8:]!='.geojson'):
 		request.session['error']='Adicione um arquivo Geojson!'
 		return redirect('/area_modelo/'+str(area.pk))
-	path = os.getcwd()+'\\arquivos\\modelos\\'+modelo.pasta+'\\masks\\'
+	path = os.getcwd()+'/arquivos/modelos/'+modelo.pasta+'/masks/'
 	with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
 		for chunk in mask.chunks():
 			destination.write(chunk)
@@ -1318,7 +1335,7 @@ def upload_modelo_save(request):
 			vari.modelo = modelo
 			vari.variavel = v[0]
 			vari.save()
-	path_model = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\modelos\\'
+	path_model = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/modelos/'
 	if os.path.isdir(path_model):
 		print("path Já Criado")
 	else:
@@ -1327,7 +1344,7 @@ def upload_modelo_save(request):
 	#tipo = request.POST['tipo']
 	filename = str(arq_modelo.id) + '.sav'
 	filename_temp = request.POST['arquivo']
-	path_temp = os.getcwd() + '\\arquivos\\temp\\'
+	path_temp = os.getcwd() + '/arquivos/temp/'
 	arquivo = open(path_temp + filename_temp)
 	model = ia.ler_modelo_up(path_temp + filename_temp)
 	joblib.dump(model, path_model + filename)
@@ -1345,7 +1362,7 @@ def uploadArquivoModelo(request):
 		rangeV = range(1, modelo.n_features_in_+1)
 		for r in rangeV:
 			listVars.append("var_"+str(r))
-	path_temp = os.getcwd() + '\\arquivos\\temp\\'
+	path_temp = os.getcwd() + '/arquivos/temp/'
 	filename_temp = secrets.token_hex(nbytes=6)
 	filename_temp = filename_temp + ".sav"
 	with open(path_temp+filename_temp, 'wb+') as destination:
@@ -1362,7 +1379,7 @@ def uploadPointsModelo(request, pk):
 	if (arquivo.name[-4:]!='.csv'):
 		request.session['error']='Adicione um arquivo .csv!'
 		return redirect('/area_modelo/'+str(area.pk))
-	path = os.getcwd()+'\\arquivos\\modelos\\'+modelo.pasta+'\\masks\\'
+	path = os.getcwd()+'/arquivos/modelos/'+modelo.pasta+'/masks/'
 	with default_storage.open(path+str(pk)+'.csv', 'wb+') as destination:
 		for chunk in arquivo.chunks():
 			destination.write(chunk)
@@ -1485,8 +1502,8 @@ def cortar(request, pk, stack):
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
-	path_mask = os.getcwd() + '\\arquivos\\projetos\\' + projeto.pasta + '\\' + area.pasta + '\\mask\\'
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'+stack
+	path_mask = os.getcwd() + '/arquivos/projetos/' + projeto.pasta + '/' + area.pasta + '/mask/'
 	corte_ok = corte(id, repo, path, path_mask)
 	return redirect('stack', pk, stack)
 
@@ -1502,14 +1519,14 @@ def cortarModelo(pk, stack, rasters):
 	for area in areas:
 		id = str(area.pk)
 		print("Iniciando área"+id)
-		path_area = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id
-		path_modelo = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'
+		path_area = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/' + id
+		path_modelo = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'
 		if os.path.isdir(path_area):
 			print("path Já Criado")
 		else:
 			os.mkdir(path_area)
-		path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\' + id + '\\' + stack
-		corte_ok = corte(id, repo, path, path_modelo+'masks\\')
+		path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/' + id + '/' + stack
+		corte_ok = corte(id, repo, path, path_modelo+'masks/')
 		if corte_ok:
 			for r in rasters:
 				if r.isIndex:
@@ -1530,9 +1547,9 @@ def cortarModelo(pk, stack, rasters):
 						sat = None
 						for s in sats:
 							sat = s
-						src_ref = rasterio.open(path+'\\cortes\\'+modelo.sensor.bandReferencia+'.tif')
+						src_ref = rasterio.open(path+'/cortes/'+modelo.sensor.bandReferencia+'.tif')
 						raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
-						calc.indice_write_tif(raster, src_ref, path +'\\indices\\', r.tag)
+						calc.indice_write_tif(raster, src_ref, path +'/indices/', r.tag)
 			print("Finalizado ")
 		else:
 			print("Erro ao cortar! Imagens fora da área de corte!")
@@ -1548,8 +1565,8 @@ def corte(id, repo, path, path_mask):
 		print("path Já Criado")
 	else:
 		os.mkdir(path)
-		os.mkdir(path + '\\cortes')
-		os.mkdir(path + '\\indices')
+		os.mkdir(path + '/cortes')
+		os.mkdir(path + '/indices')
 	#### Cortar com gdal
 	# es_obj = {'a':...,'b':..., 'c':...}
 	kwargs = utils.montar_kwargs_gdal(path_mask, id)
@@ -1561,11 +1578,11 @@ def corte(id, repo, path, path_mask):
 		lista = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
 		for r in lista:
 			listRastes.append(r.band)
-		for dirpath, dirnames, filenames in os.walk(path+'\\..\\..\\repositorio'):
+		for dirpath, dirnames, filenames in os.walk(path+'/../../repositorio'):
 			for file in filenames:
 				if listRastes.__contains__(file[t_file_name:-4]):
-					input = dirpath + '\\' + file
-					out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
+					input = dirpath + '/' + file
+					out = path + '/cortes/' + file[t_file_name:-4] + '.tif'
 					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs)
 					print(os.path.getsize(out))
 					if os.path.getsize(out) < 500:
@@ -1589,8 +1606,8 @@ def corte(id, repo, path, path_mask):
 					if (file[-4:] == '.jp2'):
 						if listRastes.__contains__(file[t_file_name:-4]):
 							if dirpath[-7:] != "QI_DATA":
-								input = dirpath + '\\' + file
-								out = path + '\\cortes\\' + file[t_file_name:-4] + '.tif'
+								input = dirpath + '/' + file
+								out = path + '/cortes/' + file[t_file_name:-4] + '.tif'
 								processo = gdal.Warp(srcDSOrSrcDSTab=input,
 									  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
 								print(os.path.getsize(out))
@@ -1872,7 +1889,7 @@ def download_sentinel(request):
 	api.download_all(products, directory_path='repositorio/sentinel/')
 	print("XXXXXXXXXXX Inciando unzip")
 	#unzip downloads
-	path = os.getcwd()+'\\repositorio\\sentinel\\'
+	path = os.getcwd()+'/repositorio/sentinel/'
 	for dirpath, dirnames, filenames in os.walk(path):
 		for file in filenames:
 			if file[-3:]=="zip":
@@ -1888,7 +1905,7 @@ def ndvi(request, pk, stack):
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'+stack
 	progresso = progress.progress_create(projeto, "ndvi", request)
 	if progresso:
 		print(progresso.hash)
@@ -1897,14 +1914,14 @@ def ndvi(request, pk, stack):
 	print(timezone.now())
 	print("lendo arquivos...")
 
-	src_red = rasterio.open(path+'\\cortes\\B04.tif')
-	src_nir = rasterio.open(path+'\\cortes\\B08.tif')
+	src_red = rasterio.open(path+'/cortes/B04.tif')
+	src_nir = rasterio.open(path+'/cortes/B08.tif')
 	####NDVI
 	progress.progress_save(15, "Calculando NDVI - isso pode demorar...", progresso)
 	ndvi = calc.ndvi(src_red, src_nir)
 
 	progress.progress_save(60, "Escrevendo Imagem", progresso)
-	calc.ndvi_write(ndvi, src_red, path+'\\indices\\', nome)
+	calc.ndvi_write(ndvi, src_red, path+'/indices/', nome)
 
 	progress.progress_save(100, "Concluído", progresso)
 
@@ -1917,7 +1934,7 @@ def gerar_indices_area(request, pk, stack):
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'+stack
 	s = "Sentinel" + repo.level
 	sats = Satelite.objects.filter(descricao=s)
 	sat = None
@@ -1928,11 +1945,11 @@ def gerar_indices_area(request, pk, stack):
 			ipk = k[4:len(k)]
 			r = Raster.objects.get(pk=int(ipk))
 			try:
-				src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+				src_ref = rasterio.open(path + '/cortes/' + sat.bandReferencia + '.tif')
 			except:
 				return redirect('stack', pk, stack)
 			raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
-			calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
+			calc.indice_write_tif(raster, src_ref, path + '/indices/', r.tag)
 
 	return redirect('stack', pk, stack)
 def gerar_indice_area(request, pk, stack, pk_indice):
@@ -1942,7 +1959,7 @@ def gerar_indice_area(request, pk, stack, pk_indice):
 	repo.level = stack[2:4]
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
-	path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'+stack
+	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'+stack
 	s = "Sentinel" + repo.level
 	sats = Satelite.objects.filter(descricao=s)
 	sat = None
@@ -1950,11 +1967,11 @@ def gerar_indice_area(request, pk, stack, pk_indice):
 		sat = s
 	r = Raster.objects.get(pk=pk_indice)
 	try:
-		src_ref = rasterio.open(path + '\\cortes\\' + sat.bandReferencia + '.tif')
+		src_ref = rasterio.open(path + '/cortes/' + sat.bandReferencia + '.tif')
 	except:
 		return redirect('stack', pk, stack)
 	raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
-	calc.indice_write_tif(raster, src_ref, path + '\\indices\\', r.tag)
+	calc.indice_write_tif(raster, src_ref, path + '/indices/', r.tag)
 
 	return redirect('stack', pk, stack)
 def ndvi2(request, pk, stack):
@@ -2034,30 +2051,31 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 	div = 10
 	classi = False
 	paleta = utils.SEQ_COLOR_DEFAULT
+	arq_id = None
 	if menu=="Projeto":
 		area = Area.objects.get(pk=pk)
 		projeto = Projeto.objects.get(pk=area.projeto.pk)
-		path = os.getcwd() + '\\arquivos\\projetos\\' + projeto.pasta + '\\' + area.pasta + '\\' + stack + '\\indices\\'
+		path = os.getcwd() + '/arquivos/projetos/' + projeto.pasta + '/' + area.pasta + '/' + stack + '/indices/'
 		if (tipo=="Declividade"):
-			path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'
+			path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'
 			file = "declividade"
 		if (tipo=="Altitude"):
-			path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\'
+			path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/'
 			file = "altitude"
 		if(tipo == "Mascara"):
-			path = os.getcwd()+'\\arquivos\\projetos\\'+projeto.pasta+'\\'+area.pasta+'\\mask\\'
+			path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/mask/'
 	if menu=="Modelo":
 		area = AreaModelo.objects.get(pk=pk)
 		modelo = Modelo.objects.get(pk=area.classe.modelo.pk)
-		path_base = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta
-		path = os.getcwd() + '\\arquivos\\modelos\\' + modelo.pasta + '\\'+str(area.pk)+'\\'+stack+'\\indices\\'
+		path_base = os.getcwd() + '/arquivos/modelos/' + modelo.pasta
+		path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/'+str(area.pk)+'/'+stack+'/indices/'
 		if (tipo == "Mascara"):
-			path = path_base + '\\masks\\'
+			path = path_base + '/masks/'
 		if (tipo == "Declividade"):
-			path = path_base + '\\'+str(area.pk)+'\\'
+			path = path_base + '/'+str(area.pk)+'/'
 			file = "declividade"
 		if (tipo == "Altitude"):
-			path = path_base + '\\'+str(area.pk)+'\\'
+			path = path_base + '/'+str(area.pk)+'/'
 			file = "altitude"
 	if (tipo == "Mascara"):
 		mask = path + str(area.pk) + ".geojson"
@@ -2108,7 +2126,8 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 			zoom_start=12
 		)
 		if classi:
-			modelo = Modelo.objects.get(pk=2)
+			arq = ArquivoModelo.objects.get(pk=int(arq_id))
+			modelo = arq.modelo
 			classes = ClasseModelo.objects.filter(modelo=modelo)
 			reds = []
 			greens = []
@@ -2154,7 +2173,7 @@ def mapateste_json(request, tag, sat='Sentinel2C'):
         #raise PermissionDenied
     #### abrindo imagem
 	erro = ""
-	path = os.getcwd() + '\\arquivos\\testes\\'+sat+'\\'
+	path = os.getcwd() + '/arquivos/testes/'+sat+'/'
 	try:
 		src = rasterio.open(path+tag+'.tif')
 	except:

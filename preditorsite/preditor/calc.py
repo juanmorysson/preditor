@@ -44,8 +44,8 @@ def indice_calc_formula(srcRef, sat, formula, path):
 	myVars = vars()
 	for item in list_r:
 		name = Raster.objects.get(tagOnSat=item, satelite = sat).band
-		linha = " rasterio.open('"+path+"\\cortes\\"+name+".tif').read(1)"
-		linha = linha.replace("\\","\\\\")
+		linha = " rasterio.open('"+path+"/cortes/"+name+".tif').read(1)"
+		linha = linha.replace("\\", "\\\\")
 		myVars[item] = eval(linha)
 
 	print("executando......")

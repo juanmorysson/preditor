@@ -6,14 +6,14 @@ from django.contrib.auth.models import User
 class Satelite(models.Model):
     descricao = models.CharField(max_length=200)
     bandReferencia = models.CharField(max_length=200)
-    responsavel = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     publica = models.BooleanField(default=False)
     def __str__(self):
         return self.descricao
 class Modelo(models.Model):
     pasta = models.CharField(max_length=20, unique=True)
     descricao = models.CharField(max_length=200)
-    responsavel = models.ForeignKey('auth.User', on_delete=models.PROTECT, null=True)
+    responsavel = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
     data_criacao =  models.DateTimeField(null=True,blank=True)
     stack = models.CharField(max_length=200, null=True)
     percent = models.CharField(max_length=3, null=True)
@@ -115,15 +115,6 @@ class Raster_Modelo(models.Model):
     raster = models.ForeignKey(Raster, on_delete=models.CASCADE, null=False)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
     data_criacao = models.DateTimeField(default=timezone.now)
-
-class RasterBand(models.Model):
-    band = models.CharField(max_length=200)
-    tagOnSat = models.CharField(max_length=200)
-    raster = models.ForeignKey(Raster, on_delete=models.CASCADE, null=False)
-    satelite = models.ForeignKey(Satelite, on_delete=models.CASCADE, null=False)
-
-    def __str__(self):
-        return self.satelite.descricao + " - " + self.band + " - " +  self.tagOnSat + " - " +  self.raster.tag
 
 class BarraProgresso(models.Model):
     percent = models.CharField(max_length=2)

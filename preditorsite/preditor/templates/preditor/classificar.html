@@ -64,12 +64,35 @@
 										{% endfor %}
 									</tbody>
 							</table>
-							{% else %}
+							<table class="table user-table table-hover">
+								<thead>
+									<tr>
+										<th class="border-top-0">
+											Classe
+										</th>
+										<th class="border-top-0">
+											Cor
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for c in cores %}
+										<tr>
+											<td>
+												{{c|slice:'7:'}}
+											</td>
+											<td style="background-color: {{c|slice:':7'}}">
+											</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						{% else %}
 							O Stack não contém todas a variáveis que o modelo exige!
-							{% endif %}
-						</div>
+						{% endif %}
 					</div>
 				</div>
+			</div>
 			</div>
 			<div class="col-sm-12">
 			<h3 class="card-title mb-0 p-10"> Resultado da Classificação </h3>
@@ -110,9 +133,12 @@
 								</tr>
 							{% endfor %}
 						</tbody>
+
 					</table>
+					Total de Pixels: {{ pxtotal }}
 				</div>
 			</div>
+
 		</div>
 
 		</div>
