@@ -7,19 +7,21 @@ from sklearn.model_selection import KFold
 from sklearn.datasets import make_classification
 from sklearn.model_selection import cross_val_score
 from sklearn.inspection import permutation_importance
-from sklearn.metrics import plot_confusion_matrix
+#from sklearn.metrics import plot_confusion_matrix
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import joblib
 
 def testar_modelo(model, X_test, Y_test):
 	result = model.score(X_test, Y_test)
 	#confusion_matrix(Y_test, model)
-	m = plot_confusion_matrix(model, X_test, Y_test, cmap=plt.cm.Blues)
-	print(type(m))
-	print(m)
-	m.ax_.set_title('Confusion Matrix', color='black')
-	plt.xlabel('Predicted Label', color='black')
-	plt.ylabel('True Label', color='black')
+	predictions = model.predict(X_test)
+	cm = confusion_matrix(Y_test, predictions, labels=model.classes_)
+	disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels = model.classes_)
+	cm2 = disp.plot()
+	cm2.ax_.set_title('Matriz de Confusão', color='black')
+	plt.xlabel('Classe Pervista', color='black')
+	plt.ylabel('Classe Real', color='black')
 	plt.gcf().axes[0].tick_params(colors='black')
 	plt.gcf().axes[1].tick_params(colors='black')
 	return result, plt
