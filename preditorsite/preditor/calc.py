@@ -2,6 +2,7 @@ import numpy as np
 import rasterio
 from .models import Raster
 import os
+from . import utils
 
 def ndvi(srcRed, srcNearInRed):
 	bandRed = srcRed.read(1)
@@ -44,7 +45,12 @@ def indice_calc_formula(srcRef, sat, formula, path):
 	myVars = vars()
 	for item in list_r:
 		name = Raster.objects.get(tagOnSat=item, satelite = sat).band
-		linha = " rasterio.open('"+path+"/cortes/"+name+".tif').read(1)"
+		extensao = ".tif"
+		for img in utils.list_filesinfolder(path):
+			a, e = os.path.splitext(str(img))
+			if name == a:
+				extensao = e
+		linha = " rasterio.open('"+path+name+extensao+"').read(1)"
 		linha = linha.replace("\\", "\\\\")
 		myVars[item] = eval(linha)
 

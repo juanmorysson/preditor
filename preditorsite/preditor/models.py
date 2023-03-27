@@ -8,6 +8,7 @@ class Satelite(models.Model):
     bandReferencia = models.CharField(max_length=200)
     responsavel = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     publica = models.BooleanField(default=False)
+    bandas = models.IntegerField(default=0)
     def __str__(self):
         return self.descricao
 class Modelo(models.Model):
@@ -33,14 +34,35 @@ class TipoArquivoModelo(models.Model):
 class ArquivoModelo(models.Model):
     tipo = models.ForeignKey(TipoArquivoModelo, on_delete=models.CASCADE, null=True)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
+    data_inicio_treinamento = models.DateTimeField(null=True, blank=True)
     data_treinamento = models.DateTimeField(null=True, blank=True)
+    data_validacao = models.DateTimeField(null=True, blank=True)
     loop_cross = models.CharField(max_length=20, null=True)
     max_depth = models.CharField(max_length=20, null=True)
+    n_estimators = models.CharField(max_length=20, null=True)
+    kernel = models.CharField(max_length=20, null=True)
     acuraciaTreinoMedia = models.CharField(max_length=20, null=True)
     acuraciaTreinoMaior = models.CharField(max_length=20, null=True)
     acuraciaTreinoMenor = models.CharField(max_length=20, null=True)
     data_teste = models.DateTimeField(null=True, blank=True)
     acuraciaTeste = models.CharField(max_length=20, null=True)
+
+    @property
+    def tempotreino(self):
+        tempo = "00"
+        try:
+            tempo = abs((self.data_treinamento - self.data_inicio_treinamento).seconds)
+        except:
+            print(tempo)
+        return tempo
+    @property
+    def tempovalidacao(self):
+        tempo = "00"
+        try:
+            tempo = abs((self.data_validacao - self.data_treinamento).seconds)
+        except:
+            tempo = "00"
+        return tempo
 
 class VariavelModelo(models.Model):
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
@@ -119,15 +141,28 @@ class Raster_Modelo(models.Model):
 class BarraProgresso(models.Model):
     percent = models.CharField(max_length=2)
     processo = models.CharField(max_length=10)
-    mov = models.CharField(max_length=500)
-    hash = models.CharField(max_length=500)
-    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, null=True)
     usuario = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
     data_criacao =  models.DateTimeField(null=True,blank=True)
     data_finalizacao =  models.DateTimeField(null=True,blank=True)
+    ativo = models.BooleanField(default=True)
+    mov = models.CharField(max_length=400, null=True)
 
     def __str__(self):
         return self.percent
 
+    def movi(self, percent, mov):
+        self.mov = mov
+        self.percent = percent
 
-# Create your models here.
+    def finalizar(self):
+        self.data_finalizacao = timezone.now()
+        self.percent = "100"
+        self.mov = "Finalizado"
+        self.ativo = False
+
+    def cancelar(self):
+        self.data_finalizacao = timezone.now()
+        self.mov = "Cancelado pelo usuário"
+        self.ativo = False
+
+        # Create your models here.

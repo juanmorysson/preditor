@@ -1,0 +1,37 @@
+
+{% extends 'preditor/main.html' %}
+{% block content %}
+{% load static %}
+<div class="page-breadcrumb">
+    <div class="row align-items-center">
+        <div class="col-md-6 col-8 align-self-center">
+            <h3 class="page-title mb-0 p-0">Editor de Sensores</h3>
+        </div>
+        <div class="col-md-6 col-4 align-self-center">
+            <div class="text-end upgrade-btn">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- column -->
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+	
+	<form method="POST" class="form-horizontal" enctype="multipart/form-data">
+	{% csrf_token %}
+		{{ form.as_p }}
+        <p style="color:red;">{{erro}}</p>
+        <p style="color:green;">{{sucesso}}</p>
+		<button type="submit" class="btn btn-success" formaction="{{action}}">Salvar</button>
+	</form>
+				</div> 
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+

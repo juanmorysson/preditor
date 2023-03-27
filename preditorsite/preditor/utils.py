@@ -2,7 +2,7 @@ import pandas as pd
 from django.shortcuts import get_object_or_404
 from pyproj import Transformer
 from django.shortcuts import redirect
-from .models import Projeto
+from .models import Projeto, BarraProgresso, Raster
 from .class_utils import *
 from rasterio.enums import Resampling
 from PIL import Image
@@ -13,6 +13,8 @@ import zipfile
 from osgeo import gdal
 import rasterio
 from sentinelsat import SentinelAPI, read_geojson, geojson_to_wkt
+import subprocess
+from django.utils import timezone
 
 SEQ_COLOR_DEFAULT = [
 	(255, 0, 0, 255),
@@ -322,3 +324,27 @@ def verificaBool(b, v, f):
 		return v
 	else:
 		return f
+
+
+def criar_barra(user, processo):
+	bp = BarraProgresso()
+	bp.percent = "0"
+	bp.processo = processo
+	bp.mov = "Iniciando..."
+	bp.usuario = user
+	bp.data_criacao = timezone.now()
+	bp.save()
+	return bp
+
+def criar_banda(sensor, i, user):
+	b = Raster()
+	b.tag = "Band"+str(i)
+	b.tagOnSat = "Band"+str(i)
+	b.band = "Band"+str(i)
+	b.satelite = sensor
+	b.responsavel = user
+	b.save()
+
+def processoativo(progresso):
+	bp = BarraProgresso.objects.get(pk=progresso.pk)
+	return bp.ativo

@@ -202,6 +202,31 @@ jQuery(document).ready(function($) {
 
 });
 
+jQuery(document).ready(function($) {
+    $(".clickable-row-cm").click(function() {
+         $.ajax({
+            type: 'GET',
+            url: '/url_image/'+$(this).data("href"),
+            async: false,
+            crossDomain: 'true',
+            success: function (data, status) {
+              console.log("foi...")
+              /* PUT THIS INSIDE AJAX SUCCESS */
+              const parent = document.getElementById("ibagem");
+              const child = document.getElementById("image_id");
+              parent.removeChild(child);
+              var img = $('<img id="image_id">');
+              img.attr('src', data.url);
+              img.appendTo('#ibagem');
+              },
+            error: function (err) {
+                console.log("não foi...")
+                console.log(err);
+              },
+          });
+    });
+});
+
 
 function getMesagem(mesagem, tipo){
   const Toast = Swal.mixin({

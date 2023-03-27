@@ -12,6 +12,9 @@ urlpatterns = [
     
     path('progress', views.progress.progress, name='progress' ),
     path('progressos', views.progressos, name='progressos' ),
+    path('progressos/parar/<int:pk>/', views.progresso_parar, name='progresso_parar'),
+    path('progressos/excluir/<int:pk>/', views.progresso_excluir, name='progresso_excluir'),
+    path('progressos/excluir_finalizados/', views.progressos_excluir_finalizados, name='progressos_excluir_finalizados'),
     path('unzip/<ar>/', views.utils.unzip, name='unzip'),
     
     path('draw2', views.draw, name="draw"),
@@ -22,6 +25,8 @@ urlpatterns = [
     path('indice/testarFormula', views.indice_testarFormula, name='indice_testarFormula'),
     path('indice/<int:pk>/testarFormula', views.indice_testarFormula, name='indice_testarFormula'),
     path('indice/new', views.indice_new, name='indice_new'),
+
+    path('sensor/<int:pk>/edit', views.sensor_edit, name='sensor_edit'),
 
     path('modelos', views.modelos, name="modelos"),
     path('modelo/<int:pk>/', views.modelo_open, name='modelo_open'),
@@ -34,7 +39,7 @@ urlpatterns = [
     path('modelo/validar/<int:pk>', views.validar, name='validar'),
     path('modelo/testar/<int:pk>', views.testar, name='testar'),
     path('modelo/excluir_arquivo/<int:pk>', views.excluir_arquivo, name='excluir_arquivo'),
-    path('modelo/save_sensor/<int:pk>/<int:pk_sensor>', views.save_sensor, name='save_sensor'),
+    path('modelo/save_sensor/<int:pk>/<pk_sensor>', views.save_sensor, name='save_sensor'),
     path('modelo/uploadImageRepositorio/<int:pk>/', views.uploadImageRepositorio, name="uploadImageRepositorio"),
     path('modelo/var/<int:pk>/edit/', views.var_modelo_edit, name='var_modelo_edit'),
 
@@ -82,5 +87,6 @@ urlpatterns = [
     path('mapa_json/<pk>/<stack>/<tipo>/<menu>', views.mapa_json, name='mapa_json' ),
     path('mapateste_json/<tag>/<sat>', views.mapateste_json, name='mapateste_json' ),
     path('summary_json/<pk>', views.summary_json, name='summary_json' ),
+    path('url_image/<tag>/<pk>', views.url_image, name='summary_json' ),
     path('dados_json/<pk>', views.dados_json, name='dados_json' ),
 ]

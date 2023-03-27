@@ -196,28 +196,69 @@
     	<div class="col-sm-5">
         	<div class="card">
 				{% if sensor.pk > 2 %}
-				<div class="card-body" style="overflow-y: scroll; height: 410px;">
-					Upload: Subir Stack:
-					<form method="POST" enctype="multipart/form-data">
-						{% csrf_token %}
-						<div class="col-sm">
-							<select name="tipoImagem" class="form-control" >
-								<option value="RGB">RGB - Três Bandas</option>
-								<option value="RED">Somente Banda Vermalho - RED</option>
-								<option value="GREEN">Somente Banda Verde - GREEN</option>
-								<option value="BLUE">Somente Banda Azul - BLUE</option>
-							</select>
+				<div class="card-body" >
+					<div class="row">
+						<div class="col-sm-7">
+							{{sensor.descricao}}:
+							<br>Incluir imagens por Área:
 						</div>
-						<div class="col-sm">
-							<input type="file" name="imagem" accept=".jp2, .tif, .tiff, .jpg">
+						<div class="col-sm-5" align="right">
+							<a href="/sensor/{{sensor.id}}/edit" class="btn btn-secondary m-0">
+								Edit Sensor
+							</a>
+							<button type="submit" onclick="alert('As imagens inseridas abaixoi devem ter a mesa quantidade de bandas, mesma resolução para cada área cadastrada'); return false;" class="btn">
+								<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+							</button>
 						</div>
-						<div class="error-msg">
-							{{ error }}
-						</div>
-						<button type="submit" formaction="/modelo/uploadImageRepositorio/{{ modelo.pk }}/#p3" class="btn btn-secondary">
-							Add imagem
-						</button>
-					</form>
+					</div>
+					<table class="table user-table table-hover">
+							<tbody>
+							{% for area in areas %}
+								<tr>
+									<td colspan="2" style="background-color: {{area.classe.cor}}"></td>
+								</tr>
+								<tr>
+									<td>
+										{{area.descricao}}
+									</td>
+									<td>
+										{{area.classe.classe}}
+									</td>
+								</tr>
+							{% load startswith %}
+								<tr>
+									<td colspan="2" >
+										<div class="row">
+											<div class="col-sm-2 col-2">
+													{% for repo in repo_local %}
+														{% if repo|startswith:area.pk %}
+															<img src="{% static 'assets/images/icoimage2.png' %}" title="{{repo}}">
+														{% endif %}
+													{% endfor %}
+											</div>
+											<div class="col-sm-10 col-10">
+												<form method="POST" enctype="multipart/form-data">
+													{% csrf_token %}
+													<div class="col-sm">
+														<input type="file" name="imagem" accept=".jp2, .tif, .tiff, .jpg">
+													</div>
+													<div class="error-msg">
+														{{ error_banda }}
+													</div>
+													<button type="submit" formaction="/modelo/uploadImageRepositorio/{{ area.pk }}/#p3" class="btn btn-secondary">
+														Add imagem
+													</button>
+												</form>
+											</div>
+										</div>
+
+									</td>
+
+								</tr>
+							{% endfor %}
+							</tbody>
+					</table>
+
 					<table class="table user-table table-hover">
 						<thead>
                           <tr>
@@ -227,23 +268,7 @@
 						<tbody>
 								<tr>
 									<td>
-										Repositório Próprio <input type="radio" name="repo" value="__RGB_stackcustom" checked="checked">
-										<div class="row">
-											<div class="col-sm-4"></div>
-											<div class="col-sm-8" align="right">
-												<table class="table user-table ">
-													<tbody>
-													{% for repo in repo_local %}
-														<tr>
-															<td>
-																{{repo}}
-															</td>
-														</tr>
-													{% endfor %}
-													</tbody>
-												</table>
-											</div>
-										</div>
+										Repositório Próprio <input type="radio" name="repo" value="interno" checked="checked">
 									</td>
 								</tr>
 						</tbody>
@@ -309,8 +334,19 @@
 		<div class="col-sm-5">
         	<div class="card">
             	<div class="card-body">
-            		Escolher Variáveis:
-					<br><br>
+					<div class="row">
+					<div class="col-sm-7">
+							Escolher Variáveis:
+					</div>
+					<div class="col-sm-5" align="right">
+						<a href="/indice/new" class="btn btn-secondary m-0">
+							Criar Índice
+						</a>
+						<button type="submit" onclick="alert('É possível criar índice com as bandas da imagem'); return false;" class="btn">
+							<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+						</button>
+					</div>
+					</div>
 					<div class="row" style="overflow-y: scroll; height: 410px;">
 						<table class="table user-table table-hover">
 							<tbody>
@@ -428,9 +464,13 @@
 										</button>
 									</div>
 									<div class="col-sm-8 col-8">
-										Galhos:
-										<input type="range" name="max_depth" style="width: 100%;" value="2" min="2" max="5" oninput="this.nextElementSibling.value = this.value">
-										<output>2</output>
+										Galhos: (max_depth)
+										<input type="range" name="max_depth" style="width: 100%;" value="0" min="0" max="5" oninput="this.nextElementSibling.value = this.value">
+										<output>0</output>
+										<br>
+										Árvores: (n_estimators)
+										<input type="range" name="n_estimators" style="width: 100%;" value="100" min="0" max="200" oninput="this.nextElementSibling.value = this.value">
+										<output>100</output>
 									</div>
 								</div>
 							</div>
@@ -438,15 +478,29 @@
 								<input type="checkbox" name="model_1">
 							</div>
 						</div>
-						<br><!--
+						<br>
 						<div class="row">
 							<div class="col-sm-10">
 								Support Vector Machine
+								<div class="row">
+									<div class="col-sm-4 col-4">
+										<button type="submit" onclick="alert('Por padrão, a plataforma utiliza como critério gamma, o valor scale.'); return false;" class="btn">
+											<i class="mdi mdi-information" style="font-size: 18pt; color: orange;"></i>
+										</button>
+									</div>
+									<div class="col-sm-8 col-8">
+										Kernel:
+										<select type="select" name="kernel" class="form-control">
+											<option value="linear" selected>linear</option>
+											<option value="rbf">rbf</option>
+										</select>
+									</div>
+								</div>
 							</div>
 							<div class="col-sm-2" align="right">
 								<input type="checkbox" name="model_2">
 							</div>
-						</div>-->
+						</div>
 					</div>
 				</div>
 			</div>
@@ -462,6 +516,7 @@
 							<input type="range" name="loop_cross" style="width: 100%;" value="3" min="2" max="6" oninput="this.nextElementSibling.value = this.value">
 							<output style="width: 100%;">3</output>
 						</div>
+
 					</div>
 				</div>
 			</div>
@@ -479,6 +534,7 @@
 			</div>
 		</div>
 	</form>
+	<a name="results"></a>
 	<div class="row">
 		<div class="col-sm-12">
 			<h3 class="card-title mb-0 p-10"> Resultados e Testes </h3>
@@ -538,9 +594,17 @@
 										{% if model.max_depth %}
 											<br> Galhos: {{model.max_depth}}
 										{% endif %}
+										{% if model.n_estimators %}
+											<br> Árvores: {{model.n_estimators}}
+										{% endif %}
+										{% if model.kernel %}
+											<br> Kernel: {{model.kernel}}
+										{% endif %}
 									</td>
 									<td>
-										{{model.data_treinamento|date:'d/m/Y H:i'}}
+										{{model.data_inicio_treinamento|date:'d/m/Y H:i:s'}}<br>
+										Treino: {{model.tempotreino}} seg<br>
+										Validação: {{model.tempovalidacao}} seg
 									</td>
 									<td>
 										{{model.loop_cross}}
@@ -561,17 +625,22 @@
 										{{model.acuraciaTeste}}
 									</td>
 									<td>
-										<a href="/modelo/testar/{{ model.id }}#p5" class="btn btn-primary m-0">
-											Testar
+										<a href="/modelo/testar/{{ model.id }}#results" title="Testar" class="btn btn-primary m-0">
+											<i class="mdi mdi-check"></i>
 										</a>
-										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" data-href="{{model.id}}" >
-											Ver
+
+										<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" title="Download" class="btn btn-primary">
+											<i class="mdi mdi-download"></i>
 										</a>
-										<a href="/modelo/excluir_arquivo/{{ model.id }}#p5" class="btn btn-primary m-0">
-											Excluir
+										<a href="/modelo/excluir_arquivo/{{ model.id }}#results" class="btn btn-primary m-0" title="Excluir">
+											<i class="mdi mdi-delete"></i>
 										</a>
-										<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
-											Download
+										<br><br>
+										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" title="Visualizar Variáveis" data-href="{{model.id}}" >
+											<i class="mdi mdi-eye"></i>
+										</a>
+										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg4" class="clickable-row-cm btn btn-primary m-0" title="Matriz de Confusão" data-href="{{modelo.pasta}}/{{model.id}}" >
+											<i class="mdi mdi-matrix"></i>
 										</a>
 									</td>
 								</tr>
@@ -619,8 +688,8 @@
 											{{model.modelo.data_criacao|date:'d/m/Y H:i'}}
 										</td>
 										<td>
-											<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" class="btn btn-primary">
-												Download
+											<a href="{% url 'index' %}media/modelos/{{modelo.pasta}}/modelos/{{model.tipo.filename}}{{model.id}}.sav" title="Download" class="btn btn-primary">
+												<i class="mdi mdi-download"></i>
 											</a>
 										</td>
 									</tr>
@@ -649,6 +718,37 @@
                                 <div class="card-body">
 									<canvas id="bar-chart"></canvas>
 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-body" >
+                    <div class="row" >
+						<div class="col-sm-9 col-9" >
+							<h3 class="page-title mb-0 p-0" id="arq"></h3>
+								<p id="desc_arq"></p>
+						</div>
+						<div class="col-sm-3 col-3">
+                          <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+			<div id="imageModal" data-backdrop="static" class="modal fade bd-example-modal-lg4" tabindex="-1" role="dialog"  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-body">
+									<div id="ibagem">
+										<img id="image_id">
+									</div>
                                 </div>
                             </div>
                         </div>

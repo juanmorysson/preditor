@@ -7,11 +7,22 @@ from sklearn.model_selection import KFold
 from sklearn.datasets import make_classification
 from sklearn.model_selection import cross_val_score
 from sklearn.inspection import permutation_importance
+from sklearn.metrics import plot_confusion_matrix
+import matplotlib.pyplot as plt
 import joblib
 
 def testar_modelo(model, X_test, Y_test):
 	result = model.score(X_test, Y_test)
-	return result
+	#confusion_matrix(Y_test, model)
+	m = plot_confusion_matrix(model, X_test, Y_test, cmap=plt.cm.Blues)
+	print(type(m))
+	print(m)
+	m.ax_.set_title('Confusion Matrix', color='black')
+	plt.xlabel('Predicted Label', color='black')
+	plt.ylabel('True Label', color='black')
+	plt.gcf().axes[0].tick_params(colors='black')
+	plt.gcf().axes[1].tick_params(colors='black')
+	return result, plt
 
 def classificar(model, df_dados_stack):
 	return model.predict(df_dados_stack)
@@ -27,11 +38,11 @@ def validar_modelo(model, target, y, split_cross):
 	maior = "%.5f" % (max * 100)
 	mean = "%.5f" % (mean * 100)
 	return mean, menor, maior
-def treinar_modelo(target, y, tipo, max_depth, list_cols = None):
+def treinar_modelo(target, y, tipo, kernel="linear", max_depth=None, estimators=100, list_cols = None):
 	model = None
 	importance = None
 	if tipo.tag == "rf":
-		model = rfc(max_depth=max_depth, random_state=0)
+		model = rfc(max_depth=max_depth, random_state=0, n_estimators=estimators)
 		model.fit(target, y)
 		model.feature_names_in_= list_cols
 		print("Verificando importâncias")
@@ -42,13 +53,14 @@ def treinar_modelo(target, y, tipo, max_depth, list_cols = None):
 		#for i, v in enumerate(importance):
 		#	print('Feature: %0d, Score: %.5f' % (i, v))
 	if tipo.tag == "svm":
-		model = svm.SVC()
+		model = svm.SVC(kernel=kernel, C=2)
 		model.fit(target, y)
+		model.feature_names_in_ = list_cols
 		print("Verificando importâncias")
 		if model.kernel == "rbf":
-			importance = permutation_importance(model, target, y)
+			importance = model._get_coef()[0]
 		if model.kernel == "linear":
-			importance = model.coef_
+			importance = model.coef_[0]
 
 	return model, importance
 

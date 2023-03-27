@@ -21,6 +21,16 @@ class VariavelModeloForm(forms.ModelForm):
             'variavel': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+class SensorForm(forms.ModelForm):
+    class Meta:
+        model = Satelite
+        fields = ( 'descricao', 'bandReferencia', 'bandas')
+
+        widgets = {
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'bandReferencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'bandas': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 class IndiceForm(forms.ModelForm):
 
     class Meta:
