@@ -18,7 +18,7 @@ def testar_modelo(model, X_test, Y_test):
 	predictions = model.predict(X_test)
 	cm = confusion_matrix(Y_test, predictions, labels=model.classes_)
 	disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels = model.classes_)
-	cm2 = disp.plot()
+	cm2 = disp.plot(cmap=plt.cm.Blues)
 	cm2.ax_.set_title('Matriz de Confusão', color='black')
 	plt.xlabel('Classe Pervista', color='black')
 	plt.ylabel('Classe Real', color='black')

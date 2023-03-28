@@ -62,6 +62,8 @@ def mapa_cerrado(request):
 	m=m._repr_html_()
 
 	return render(request, 'preditor/mapa_cerrado.html', {'my_map': m})
+def politica_privacidade(request):
+	return render(request, 'preditor/politica_privacidade.html', {})
 def modelos(request):
 	if not request.user.is_authenticated:
 		return redirect('accounts/login')

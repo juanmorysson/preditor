@@ -5,6 +5,8 @@ from django.contrib.auth.views import LogoutView
 urlpatterns = [
     path('', views.index, name="index"),
     path('mapa_cerrado', views.mapa_cerrado, name="mapa_cerrado"),
+    path('politica_privacidade', views.politica_privacidade, name="politica_privacidade"),
+
     path('user', views.user, name='user'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('allauth.urls')),
