@@ -19,6 +19,7 @@ from area import area as c_area
 import csv
 import secrets
 from sklearn.model_selection import train_test_split
+import geopandas
 
 #import ee
 from shapely.geometry import Polygon
@@ -1506,13 +1507,44 @@ def uploadMaskModelo(request, pk):
 		request.session['error']='Adicione um arquivo Geojson!'
 		return redirect('/area_modelo/'+str(area.pk))
 	mask = request.FILES['mask_'+str(pk)]
+	path = os.getcwd() + '/arquivos/modelos/' + modelo.pasta + '/masks/'
 	if (mask.name[-8:]!='.geojson'):
-		request.session['error']='Adicione um arquivo Geojson!'
-		return redirect('/area_modelo/'+str(area.pk))
-	path = os.getcwd()+'/arquivos/modelos/'+modelo.pasta+'/masks/'
-	with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
-		for chunk in mask.chunks():
-			destination.write(chunk)
+		if (mask.name[-4:] == '.zip'):
+			with default_storage.open(path + str(pk) + '.zip', 'wb+') as destination:
+				for chunk in mask.chunks():
+					destination.write(chunk)
+			with zipfile.ZipFile('{}/{}'.format(path, str(pk) + '.zip'),"r") as zip_ref:
+				zip_ref.extractall(path)
+			os.remove('{}/{}'.format(path, str(pk) + '.zip'))
+			namef=""
+			for dirpath, dirnames, filenames in os.walk(path):
+				for item in filenames:
+					if item[-4:] == '.shp':
+						namef = item[:-4]
+						shp_file = geopandas.read_file(dirpath+'/' + item)
+						#todo: verificar se tods SHP são wgs84
+						shp_file = shp_file.to_crs(crs="wgs84", epsg=shp_file.estimate_utm_crs())
+						print(shp_file)
+						try:
+							shp_file.to_file(path+str(pk)+'.geojson', driver='GeoJSON', crs=shp_file.crs)
+						except:
+							request.session['error'] = 'Existe algum problema no seu arquivo zip!'
+							return redirect('/area_modelo/' + str(area.pk))
+			if namef != "":
+				for dirpath, dirnames, filenames in os.walk(path):
+					for item in filenames:
+						if item.startswith(namef):
+							os.remove(dirpath+'/' + item)
+			else:
+				request.session['error'] = 'Seu arquivo zipado não contem .shp!'
+				return redirect('/area_modelo/' + str(area.pk))
+		else:
+			request.session['error']='Adicione um arquivo Geojson!'
+			return redirect('/area_modelo/'+str(area.pk))
+	if (mask.name[-4:] != '.zip'):
+		with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
+			for chunk in mask.chunks():
+				destination.write(chunk)
 	with open(path+str(pk)+'.geojson') as data_file:
 		geoms = json.loads(data_file.read())
 	obj = geoms['features'][0]['geometry']
@@ -1831,7 +1863,13 @@ def corte(id, repo, path, path_mask):
 		print("path Já Criado")
 	else:
 		os.mkdir(path)
+	if os.path.isdir(path + '/cortes'):
+		print("path Já Criado")
+	else:
 		os.mkdir(path + '/cortes')
+	if os.path.isdir(path + '/indices'):
+		print("path Já Criado")
+	else:
 		os.mkdir(path + '/indices')
 	#### Cortar com gdal
 	# es_obj = {'a':...,'b':..., 'c':...}
@@ -1851,7 +1889,7 @@ def corte(id, repo, path, path_mask):
 					out = path + '/cortes/' + file[t_file_name:-4] + '.tif'
 					processo = gdal.Warp(srcDSOrSrcDSTab=input, destNameOrDestDS=out, **kwargs)
 					print(os.path.getsize(out))
-					if os.path.getsize(out) < 500:
+					if os.path.getsize(out) < 200:
 						return False
 	else:
 		path_input = ''
@@ -1877,7 +1915,7 @@ def corte(id, repo, path, path_mask):
 								processo = gdal.Warp(srcDSOrSrcDSTab=input,
 									  destNameOrDestDS=out, **kwargs, xRes=10, yRes=10)
 								print(os.path.getsize(out))
-								if os.path.getsize(out) < 500:
+								if os.path.getsize(out) < 200:
 									return False
 	return True
 def progress_callback(complete, message, self):
@@ -1940,8 +1978,8 @@ def declividade_gerar(request, pk):
 	print("Visualização no folium...")
 	m = folium.Map(
 		location=[location[2], location[1]], 
-		tiles='Stamen Terrain',
-		#tiles="cartodbpositron",
+		#tiles='Stamen Terrain',
+		tiles="cartodbpositron",
 		zoom_start=12
 	)
 	utils.exportRGBA(path, "declividade", 0.0, src_saida.max(), 10)
@@ -1971,8 +2009,8 @@ def declividade(request, pk):
 	location = utils.convertToWGS84(src_saida)
 	m = folium.Map(
 		location=[location[2], location[1]], 
-		tiles='Stamen Terrain',
-		#tiles="cartodbpositron",
+		#tiles='Stamen Terrain',
+		tiles="cartodbpositron",
 		zoom_start=12
 	)
 	#add imagem do disco
@@ -2014,8 +2052,8 @@ def altitude_gerar(request, pk):
 	print("Visualização no folium...")
 	m = folium.Map(
 		location=[location[2], location[1]], 
-		tiles='Stamen Terrain',
-		#tiles="cartodbpositron",
+		#tiles='Stamen Terrain',
+		tiles="cartodbpositron",
 		zoom_start=12
 	)
 	utils.exportRGBA(path, "altitude", 0.0, src_saida.max(), 10)
@@ -2045,8 +2083,8 @@ def altitude(request,pk):
 	location = utils.convertToWGS84(src_saida)
 	m = folium.Map(
 		location=[location[2], location[1]], 
-		tiles='Stamen Terrain',
-		#tiles="cartodbpositron",
+		#tiles='Stamen Terrain',
+		tiles="cartodbpositron",
 		zoom_start=12
 	)
 	#add imagem do disco
@@ -2387,8 +2425,8 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 		print("Visualização no folium...")
 		m = folium.Map(
 			location=[location[2], location[1]], 
-			tiles='Stamen Terrain',
-			#tiles="cartodbpositron",
+			#tiles='Stamen Terrain',
+			tiles="cartodbpositron",
 			zoom_start=12
 		)
 		if classi:
