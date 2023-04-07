@@ -1504,31 +1504,37 @@ def uploadImageRepositorio(request, pk):
 		print("path Já Criado")
 	else:
 		os.mkdir(path)
-	im = Image.open(imagem)
+	qtd_bandas = 0
+	arq, ext = os.path.splitext(str(imagem))
 	if str(imagem)[-4:].upper() == '.JPG':
+		im = Image.open(imagem)
 		if im.getexif():
 			print(im.getexif())
 		else:
 			request.session['error'] = 'Adicione uma Iamegm Georeferenciada!'
 			return redirect('/modelo/' + str(modelo.pk) + '/')
-	bandas = im.getbands()
+		qtd_bandas = len(im.getbands())
+		with open(path + str(area.pk) + ext, 'wb') as f:
+			f.write(imagem.read())
+	else:
+		with MemoryFile(imagem) as memfile:
+			with memfile.open() as dataset:
+				data_array = dataset.read()
+				qtd_bandas, a, b = data_array.shape
+				with open(path + str(area.pk) + ext, 'wb') as f:
+					f.write(memfile.read())
+	#SENSOR
 	sensor = modelo.sensor
 	if sensor.bandas == 0:
 		# criar bandas do sensor
-		sensor.bandas = len(bandas)
+		sensor.bandas = qtd_bandas
 		sensor.save()
-		for i in range(len(bandas)):
+		for i in range(qtd_bandas):
 			utils.criar_banda(sensor, i, request.user)
 	else:
-		if sensor.bandas != len(bandas):
-			request.session['error'] = 'Essa imagem tem '+ str(len(bandas)) + ' banda(s), e esse sensor está preparado para receber '+str(sensor.bandas)+ ' bandas.'
+		if sensor.bandas != qtd_bandas:
+			request.session['error'] = 'Essa imagem tem '+ str(qtd_bandas) + ' banda(s), e esse sensor está preparado para receber '+str(sensor.bandas)+ ' bandas.'
 			return redirect('/modelo/'+str(modelo.pk)+'/')
-	#if im.getbands() == ('R', 'G', 'B'):
-	#	im1 = Image.Image.split(im)
-	#	im1[0].save(path + "RED" + str(imagem)[-4:])
-	#	im1[1].save(path + "GREEN" + str(imagem)[-4:])
-	#	im1[2].save(path + "BLUE" + str(imagem)[-4:])
-	im.save(path+ str(area.pk)+str(imagem)[-4:])
 	return redirect('/modelo/' + str(modelo.pk) + '/')
 def uploadMaskModelo(request, pk):
 	area = AreaModelo.objects.get(pk=pk)
@@ -1873,14 +1879,24 @@ def separar_banda(path_repo, path_destino, sensor):
 	list_files = utils.list_filesinfolder(path_repo)
 	bands_sensor = Raster.objects.filter(satelite = sensor, isIndex = False)
 	for img in list_files:
-		im = Image.open(path_repo+img)
-		bandas = im.split()
 		a, e = os.path.splitext(str(img))
 		extensao = e
-		i = 0
-		for band in bandas:
-			band.save(path_destino + bands_sensor[i].tag + '.tif')
-			i = i + 1
+		if extensao.upper() == '.JPG':
+			im = Image.open(path_repo+img)
+			bandas = im.split()
+			i = 0
+			for band in bandas:
+				band.save(path_destino + bands_sensor[i].tag + '.tif')
+				i = i + 1
+		else:
+			i = 1
+			img = rasterio.open(path_repo+img)
+			band_geo = img.profile
+			band_geo.update({"count": 1})
+			for b in bands_sensor:
+				with rasterio.open(path_destino + b.tag + '.tif', 'w', **band_geo) as dest:
+					dest.write(img.read(i), 1)
+					i = i + 1
 	return True
 
 def corte(id, repo, path, path_mask):

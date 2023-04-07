@@ -23,8 +23,8 @@
 	<form method="POST" class="form-horizontal" enctype="multipart/form-data">
 	{% csrf_token %}
 		{{ form.as_p }}
-        <p style="color:red;">{{erro}}</p>
         <p style="color:green;">{{sucesso}}</p>
+        <p style="color:red;">{{erro}}</p>
 		<button type="submit" class="btn btn-success" formaction="{{action}}">Salvar</button>
         <button type="submit" class="btn btn-success" formaction="testarFormula">Testar</button>
         <a href="" data-toggle="modal" data-target=".bd-example-modal-testindice" onclick="limpar()" class="btn btn-success clickable-testeindice" data-href="{{form.tag.value}}/{{sensor}}">
