@@ -39,6 +39,7 @@
 									{% endfor %}
 								</tbody>
 							</table>
+
 						</div>
 					</div>
 				</div>
@@ -55,8 +56,8 @@
 										{% for mod in classificacoes %}
 											<tr data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="clickable-row" data-href="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto">
 												<td>
-													{{mod.desc|slice:':-4'}}
-													<a href="" data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="btn btn-primary clickable-row" data-href=="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto" >
+													Raster: {{mod.desc|slice:':-4'}}
+													<a href="" style="float:right" data-toggle="modal" data-target=".bd-example-modal-lg" onclick="limpar()" class="btn btn-primary clickable-row" data-href=="{{area.pk}}/{{repo.sat}}{{repo.level}}{{repo.data}}/Classi_{{modelo_treinado.id}}*{{mod.desc|slice:':-4'}}/Projeto" >
 														Visualizar
 													</a>
 												</td>
@@ -169,6 +170,17 @@
 						Média: {{ modelo_treinado.acuraciaTreinoMedia }}<br>
 						Maior: {{ modelo_treinado.acuraciaTreinoMaior }}<br>
 						Teste: {{ modelo_treinado.acuraciaTeste }}<br>
+						{% if not modelo_treinado.modelo.upload %}
+							<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" title="Visualizar importância Variáveis" data-href="{{model.id}}" >
+											<i class="mdi mdi-eye"></i>
+							</a>
+						{% endif %}
+						{% if modelo_treinado.acuraciaTeste %}
+							<a href="" data-toggle="modal" data-target=".bd-example-modal-lg4" class="clickable-row-cm btn btn-primary m-0" title="Matriz de Confusão" data-href="{{modelo_treinado.modelo.pasta}}/{{modelo_treinado.id}}" >
+								<i class="mdi mdi-matrix"></i>
+							</a>
+						{% endif %}
+
 					</div>
 	            </div>
 	        </div>
@@ -176,6 +188,36 @@
 	</div>
 
 
+	<div id="imageModal" data-backdrop="static" class="modal fade bd-example-modal-lg4" tabindex="-1" role="dialog"  aria-labelledby="myLargeModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card">
+                                <div class="card-body">
+									<div id="ibagem">
+										<img id="image_id">
+									</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                  <div class="modal-body" >
+                    <div class="row" >
+						<div class="col-sm-9 col-9" >
+							<h3 class="page-title mb-0 p-0" id="arq"></h3>
+								<p id="desc_arq"></p>
+						</div>
+						<div class="col-sm-3 col-3">
+                          <button  onclick="fecharmodel()"  type="button" id="fechar" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
 {% endblock %}
 

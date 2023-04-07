@@ -107,6 +107,7 @@
 							<a href="/area_modelo/new/{{modelo.pk}}/" class="btn btn-primary">
 								Nova Área
 							</a>
+
 						</div>
 						<div class="col-sm-8" align="right"
 							{% if area_total > limite_area %}
@@ -114,6 +115,9 @@
 							{% endif %}
 						>
 							Área total: {{area_total}} m²
+							<a href="" data-toggle="modal" data-target=".bd-example-modal-lg" class="clickable-row-mara-geral btn btn-primary m-0" title="Mapa Geral" onclick="limpar()" data-href="{{modelo.id}}">
+								<i class="mdi mdi-map"></i>
+							</a>
 						</div>
 					</div>
 
@@ -639,9 +643,11 @@
 										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg2" class="clickable-row-sum btn btn-primary m-0" title="Visualizar Variáveis" data-href="{{model.id}}" >
 											<i class="mdi mdi-eye"></i>
 										</a>
+										{% if model.acuraciaTeste %}
 										<a href="" data-toggle="modal" data-target=".bd-example-modal-lg4" class="clickable-row-cm btn btn-primary m-0" title="Matriz de Confusão" data-href="{{modelo.pasta}}/{{model.id}}" >
 											<i class="mdi mdi-matrix"></i>
 										</a>
+										{% endif %}
 									</td>
 								</tr>
 							{% endfor %}

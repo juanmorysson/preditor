@@ -2,7 +2,7 @@ import pandas as pd
 from django.shortcuts import get_object_or_404
 from pyproj import Transformer
 from django.shortcuts import redirect
-from .models import Projeto, BarraProgresso, Raster
+from .models import Projeto, BarraProgresso, Raster, AreaModelo
 from .class_utils import *
 from rasterio.enums import Resampling
 from PIL import Image
@@ -156,6 +156,7 @@ def montar_kwargs_gdal(path, name, dst = 'EPSG:32722', src = 'EPSG:32722'):
 			  'dstSRS': dst,
 			  'srcSRS': src,
 			  'cropToCutline': True,
+			  'cutlineBlend': 10,
 			  }
 	return kwargs
 
@@ -178,13 +179,13 @@ def extremidades_mascara(path):
 		if loc[0] < min_long:
 			min_long = loc[0]
 	return max_lat, min_lat, max_long, min_long
-def cortar_tif(path_mask, idmask, input, output):
+def cortar_tif(path_mask, idmask, input, output, xRes=10, yRes=10):
 	kwargs = montar_kwargs_gdal(path_mask, idmask)
 	input = input
 	out =  output
 	ds = gdal.Warp(srcDSOrSrcDSTab = input,
          destNameOrDestDS=out,
-		 **kwargs)
+		 **kwargs, xRes=xRes, yRes=yRes)
 
 def exportRGBAClasse(path, file, colors):
 	im = Image.open(os.path.join(path, file+'.tif'))
@@ -202,7 +203,7 @@ def exportRGBAClasse(path, file, colors):
 				try:
 					color = (colors.loc[p,'r'], colors.loc[p,'g'], colors.loc[p,'b'],255)
 				except:
-					print(p)
+					print("Erro"+str(p))
 					color = (0, 0, 0, 0)
 
 			image.putpixel((x, y), color)
@@ -348,3 +349,8 @@ def criar_banda(sensor, i, user):
 def processoativo(progresso):
 	bp = BarraProgresso.objects.get(pk=progresso.pk)
 	return bp.ativo
+
+def corClasse(geo):
+	#area = AreaModelo.objects.get(pk=pk)
+	#return area.classe.cor
+	return geo['properties']['cor']

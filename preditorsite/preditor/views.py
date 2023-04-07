@@ -105,7 +105,7 @@ def indice_new(request):
 		form = IndiceForm(request.user)
 	rasters = Raster.objects.filter(isIndex=False, publica=True)
 	rasters = list(rasters)
-	r_resp = Raster.objects.filter(responsavel=request.user)
+	r_resp = Raster.objects.filter(responsavel=request.user, isIndex=False)
 	for r in r_resp:
 		rasters.append(r)
 	list_sat = []
@@ -229,14 +229,14 @@ def indice_testarFormula(request, pk=0):
 			list_rasters.append((rr.satelite, list_r))
 	return render(request, 'preditor/indice_edit.html', {'form': form, 'sensor':sensor, 'rasters':rasters, 'list_rasters':list_rasters, 'action': action, 'erro':erro, 'sucesso': sucesso})
 def testeFormula(sat, formula, tag):
-	path = os.getcwd() + '/arquivos/testes/'+sat.descricao
-	src_ref = rasterio.open(path + '/cortes/'+sat.bandReferencia+'.tif')
+	path = os.getcwd() + '/arquivos/testes/'+sat.descricao+'/'
+	src_ref = rasterio.open(path + 'cortes/'+sat.bandReferencia+'.tif')
 	try:
-		raster = calc.indice_calc_formula(src_ref, sat, formula, path)
+		raster = calc.indice_calc_formula(src_ref, sat, formula, path+'cortes/')
 	except:
 		print("Erro na fórmula")
 		return False
-	calc.indice_write_tif(raster, src_ref, path +'/', tag)
+	calc.indice_write_tif(raster, src_ref, path, tag)
 	return True
 def erroFormula(user, sat, formula):
 	rasters = Raster.objects.filter(isIndex=False, publica=True, satelite=sat)
@@ -1427,13 +1427,43 @@ def uploadMask(request, pk):
 		request.session['error']='Adicione um arquivo Geojson!'
 		return redirect('/projeto/'+str(projeto.pk))
 	mask = request.FILES['mask_'+str(pk)]
+	path = os.getcwd() + '/arquivos/projetos/' + projeto.pasta + '/' + area.pasta + '/mask/'
 	if (mask.name[-8:]!='.geojson'):
-		request.session['error']='Adicione um arquivo Geojson!'
-		return redirect('/projeto/'+str(projeto.pk))
-	path = os.getcwd()+'/arquivos/projetos/'+projeto.pasta+'/'+area.pasta+'/mask/'
-	with default_storage.open(path+str(pk)+'.geojson', 'wb+') as destination:
-		for chunk in mask.chunks():
-			destination.write(chunk)
+		if (mask.name[-4:] == '.zip'):
+			with default_storage.open(path + str(pk) + '.zip', 'wb+') as destination:
+				for chunk in mask.chunks():
+					destination.write(chunk)
+			with zipfile.ZipFile('{}/{}'.format(path, str(pk) + '.zip'), "r") as zip_ref:
+				zip_ref.extractall(path)
+			os.remove('{}/{}'.format(path, str(pk) + '.zip'))
+			namef = ""
+			for dirpath, dirnames, filenames in os.walk(path):
+				for item in filenames:
+					if item[-4:] == '.shp':
+						namef = item[:-4]
+						shp_file = geopandas.read_file(dirpath + '/' + item)
+						# todo: verificar se tods SHP são wgs84
+						shp_file = shp_file.to_crs(crs="wgs84", epsg=shp_file.estimate_utm_crs())
+						try:
+							shp_file.to_file(path + str(pk) + '.geojson', driver='GeoJSON', crs=shp_file.crs)
+						except:
+							request.session['error'] = 'Existe algum problema no seu arquivo zip!'
+							return redirect('/area_modelo/' + str(area.pk))
+			if namef != "":
+				for dirpath, dirnames, filenames in os.walk(path):
+					for item in filenames:
+						if item.startswith(namef):
+							os.remove(dirpath + '/' + item)
+			else:
+				request.session['error'] = 'Seu arquivo zipado não contem .shp!'
+				return redirect('/projeto/'+str(projeto.pk))
+		else:
+			request.session['error'] = 'Adicione um arquivo Geojson!'
+			return redirect('/projeto/'+str(projeto.pk))
+	if (mask.name[-4:] != '.zip'):
+		with default_storage.open(path + str(pk) + '.geojson', 'wb+') as destination:
+			for chunk in mask.chunks():
+				destination.write(chunk)
 	return redirect('/projeto/'+str(projeto.pk))
 
 def uploadPoints(request, pk):
@@ -1891,6 +1921,7 @@ def corte(id, repo, path, path_mask):
 					print(os.path.getsize(out))
 					if os.path.getsize(out) < 200:
 						return False
+					gdal.WarpOptions()
 	else:
 		path_input = ''
 		path_input = utils.path_repositorio(repo.level, repo.data)
@@ -2252,7 +2283,7 @@ def gerar_indices_area(request, pk, stack):
 				src_ref = rasterio.open(path + '/cortes/' + sat.bandReferencia + '.tif')
 			except:
 				return redirect('stack', pk, stack)
-			raster = calc.indice_calc_formula(src_ref, sat, r.formula, path)
+			raster = calc.indice_calc_formula(src_ref, sat, r.formula, path+'/cortes/')
 			calc.indice_write_tif(raster, src_ref, path + '/indices/', r.tag)
 
 	return redirect('stack', pk, stack)
@@ -2472,6 +2503,42 @@ def mapa_json(request, pk, stack, tipo, menu="Projeto"):
 
 	return JsonResponse({'my_map_modal': m, 'tipo':tipo})
 
+def mapa_json_geral(request, pk):
+	#if not request.user.has_perm('aSocial.list_curso'):
+        #raise PermissionDenied
+    #### abrindo imagem
+	modelo = Modelo.objects.get(pk=pk)
+	path_modelo = os.getcwd() + '/arquivos/modelos/' + modelo.pasta
+	classes = ClasseModelo.objects.filter(modelo=modelo)
+	areas = AreaModelo.objects.filter(classe__in=classes)
+	loc1 = []
+	loc0 = []
+	m = folium.Map(
+		tiles="cartodbpositron",
+		zoom_start=10,
+	)
+	highlight_function = lambda x: {'fillColor': 'gray',
+									'color': 'gray',
+									'fillOpacity': 0.40,
+									'weight': 0.8}
+	style_function = lambda x: {'fillColor': utils.corClasse(x),
+								'color': utils.corClasse(x),
+								'fillOpacity': 0.8,
+								}
+	for area in areas:
+		mask = path_modelo + '/masks/' + str(area.pk) + ".geojson"
+		with open(mask) as data_file:
+			geoms = json.loads(data_file.read())
+		obj = geoms['features'][0]['geometry']
+		location = obj['coordinates'][0][0]
+		loc1.append(location[1])
+		loc0.append(location[0])
+		geoms['features'][0]['properties']['cor'] = area.classe.cor
+		folium.GeoJson(geoms, name=area.descricao, highlight_function=highlight_function, style_function=style_function).add_to(m)
+	folium.LayerControl().add_to(m)
+	m.location = [np.mean(loc1), np.mean(loc0)]
+	m=m._repr_html_()
+	return JsonResponse({'my_map_modal': m, 'tipo':"Mapa"})
 def mapateste_json(request, tag, sat='Sentinel2C'):
     #if not request.user.has_perm('aSocial.list_curso'):
         #raise PermissionDenied
@@ -2513,8 +2580,7 @@ def mapateste_json(request, tag, sat='Sentinel2C'):
 	return JsonResponse({'my_map_modal': m, 'erro':erro})
 
 def url_image(request, tag, pk):
-	url = '../../media/modelos/'+tag+'/modelos/cm'+str(pk)+'.jpg'
-	print(url)
+	url = '../../../media/modelos/'+tag+'/modelos/cm'+str(pk)+'.jpg'
 	return JsonResponse({'url': url})
 def summary_json(request, pk):
 	arq = ArquivoModelo.objects.get(pk=pk)

@@ -87,6 +87,7 @@ urlpatterns = [
     path('cortar/<int:pk>/<stack>', views.cortar, name="cortar"),
 
     path('mapa_json/<pk>/<stack>/<tipo>/<menu>', views.mapa_json, name='mapa_json' ),
+    path('mapa_json_geral/<pk>/', views.mapa_json_geral, name='mapa_json_geral' ),
     path('mapateste_json/<tag>/<sat>', views.mapateste_json, name='mapateste_json' ),
     path('summary_json/<pk>', views.summary_json, name='summary_json' ),
     path('url_image/<tag>/<pk>', views.url_image, name='summary_json' ),

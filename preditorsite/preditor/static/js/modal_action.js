@@ -5,6 +5,30 @@ jQuery(document).ready(function($) {
             url: '/mapa_json/'+$(this).data("href"),
             success: function (data) {
               console.log("foi...")
+              limpar_gif()
+              console.log(data)
+              var element = document.getElementById("mapa");
+              element.innerHTML = data['my_map_modal']
+              var tipo = document.getElementById("tipo_map");
+              tipo.innerHTML = data['tipo']
+            },
+            error: function (err) {
+                console.log("não foi...")
+                console.log(err);
+              },
+          });
+    });
+
+});
+
+jQuery(document).ready(function($) {
+    $(".clickable-row-mara-geral").click(function() {
+        $.ajax({
+            type: 'GET',
+            url: '/mapa_json_geral/'+$(this).data("href"),
+            success: function (data) {
+              console.log("foi...")
+              limpar_gif()
               console.log(data)
               var element = document.getElementById("mapa");
               element.innerHTML = data['my_map_modal']
@@ -27,6 +51,7 @@ jQuery(document).ready(function($) {
             url: '/mapateste_json/'+$(this).data("href"),
             success: function (data) {
               console.log("foi...")
+              limpar_gif()
               console.log(data)
               var element = document.getElementById("mapa");
               element.innerHTML = data['my_map_modal']
@@ -52,6 +77,7 @@ jQuery(document).ready(function($) {
             url: '/dados_json/'+$(this).data("href"),
             success: function (data) {
               console.log("foi...")
+              limpar_gif()
               console.log(data)
               var element = document.getElementById("modelo");
               element.innerHTML = data['modelo']
@@ -159,6 +185,7 @@ jQuery(document).ready(function($) {
             url: '/summary_json/'+$(this).data("href"),
             success: function (data) {
               console.log("foi...")
+              limpar_gif()
               console.log(data)
               var element = document.getElementById("arq");
               element.innerHTML = data['arq']
@@ -211,6 +238,7 @@ jQuery(document).ready(function($) {
             crossDomain: 'true',
             success: function (data, status) {
               console.log("foi...")
+              limpar_gif()
               /* PUT THIS INSIDE AJAX SUCCESS */
               const parent = document.getElementById("ibagem");
               const child = document.getElementById("image_id");
@@ -265,4 +293,10 @@ function limpar() {
 	console.log("foi...")
 	var element = document.getElementById("mapa");
     element.innerHTML = "Aguarde..."
+}
+
+function limpar_gif() {
+	console.log("foi...")
+	var element = document.getElementById("gif");
+    element.innerHTML = ""
 }
