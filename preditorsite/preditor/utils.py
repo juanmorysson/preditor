@@ -149,6 +149,16 @@ def reamostrar(raster, escala):
 	data = raster.read(out_shape=(raster.count,int(raster.height * escala),int(raster.width * escala)),resampling=Resampling.bilinear)
 	return data
 
+def reamostrar_w(input, output, width, height):
+	raster = rasterio.open(input)
+	data = raster.read(out_shape=(raster.count, width, height),resampling=Resampling.bilinear)
+	band_geo = raster.profile
+	raster.close()
+	band_geo.update({"width": width, "height": height})
+	with rasterio.open(output, 'w', **band_geo) as dest:
+		dest.write(data)
+
+
 def montar_kwargs_gdal(path, name, dst = 'EPSG:32722', src = 'EPSG:32722'):
 	kwargs = {'format': 'GTiff',
 			  'geoloc': False,

@@ -75,7 +75,7 @@ class ImportanciaVariavel(models.Model):
 
 
 class ClasseModelo(models.Model):
-    classe = models.CharField(max_length=200, null=False, blank=False)
+    classe = models.CharField(max_length=14, null=False, blank=False)
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=False)
     cor = models.CharField(max_length=8, null=False, blank=False)
     total_dados = models.CharField(max_length=200, null=True, default="0")

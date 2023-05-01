@@ -35,6 +35,7 @@ urlpatterns = [
     path('modelo/new', views.modelo_new, name='modelo_new'),
     path('modelo/gerar_stacks/<int:pk>/', views.gerar_stacks_modelo, name='gerar_stacks_modelo'),
     path('modelo/ver_stacks/<int:pk>/', views.ver_stacks_modelo, name='ver_stacks_modelo'),
+    path('modelo/reamostrar/<int:pk>/', views.reamostrar_stacks_modelo, name='reamostrar_stacks_modelo'),
     path('modelo/<int:pk>/edit/', views.modelo_edit, name='modelo_edit'),
     path('modelo/prepararDF/<int:pk>', views.prepararDataFrameModelo_Request, name='prepararDataFrameModelo_Request'),
     path('modelo/treinar/<int:pk>', views.treinar_Request, name='treinar_Request'),

@@ -368,6 +368,16 @@ def save_sensor(request, pk, pk_sensor=None):
 		novo_sensor.bandReferencia = "1"
 		novo_sensor.responsavel = request.user
 		novo_sensor.save()
+		dec = Raster()
+		dec.tag = "Declividade"
+		dec.isIndex = True
+		dec.satelite = novo_sensor
+		dec.save()
+		alt = Raster()
+		alt.tag = "Altitude"
+		alt.isIndex = True
+		alt.satelite = novo_sensor
+		alt.save()
 		pk_sensor = novo_sensor.pk
 	sensor = Satelite.objects.get(pk=pk_sensor)
 	modelo.sensor=sensor
@@ -504,6 +514,9 @@ def prepararDataFrameModelo(pk, percent, progresso):
 		if (len(dfArea)==0):
 			erro = "Algum índice está retornando apenas valores nulos. - "+area.descricao
 			print(erro)
+			progresso.cancelar()
+			progresso.mov = "Cancelado pelo sistema - " + erro
+			progresso.save()
 			return
 		area.classe.total_dados = int(area.classe.total_dados) + len(dfArea)
 		area.classe.save()
@@ -943,6 +956,54 @@ def ver_stacks_modelo (request, pk):
 		areaList = AreaList(area.pk, area.descricao, arqs)
 		list.append(areaList)
 	return render(request, 'preditor/modelo_stacks.html', {'modelo':modelo, 'list':list})
+
+def reamostrar_stacks_modelo (request, pk):
+	if not request.user.is_authenticated:
+		return redirect('accounts/login')
+	modelo = Modelo.objects.get(pk=pk)
+	if modelo.responsavel!=request.user:
+		return redirect('modelos')
+	percent = request.POST['percent']
+	progresso = utils.criar_barra(request.user, "Reamostrando Rasters do Stack em "+percent+"% no Modelo: " + modelo.descricao)
+	stack = modelo.stack
+	p = int(percent)/100
+	classes = ClasseModelo.objects.filter(modelo=modelo)
+	areas = AreaModelo.objects.filter(classe__in=classes)
+	div = 90/(len(areas)+1)
+	aux=0
+	for area in areas:
+		progresso.movi(mov="Reamostrando Rasters em "+percent+"% da área " + area.descricao, percent=str(aux))
+		progresso.save()
+		aux = aux + div
+		aux2 = aux
+		div2 = aux/15
+		for dirpath, dirnames, filenames in os.walk(os.getcwd() + '/arquivos/modelos/'+modelo.pasta+'/'+str(area.pk)+'/'):
+			for file in filenames:
+				progresso.movi(mov="Reamostrando Rasters em "+percent+"% da área " + area.descricao, percent=str(aux2))
+				progresso.save()
+				a, e = os.path.splitext(file)
+				extensao = e
+				if extensao.upper() == '.TIF':
+					aux2 = aux2 + div2
+					raster = rasterio.open(dirpath+'/'+file)
+					raster_reduzido = utils.reamostrar(raster, p)
+					b, h, w = raster_reduzido.shape
+					profile = raster.profile
+					profile.update({"width": w})
+					profile.update({"height": h})
+					raster.close()
+					del(raster)
+					try:
+						with rasterio.open(dirpath+'/'+file, 'w', **profile) as raster_2:
+							raster_2.write(raster_reduzido)
+					except:
+						progresso.cancelar()
+						progresso.mov = "Cancelado pelo sistema - Não foi possível reduzir o stack"
+						progresso.save()
+						return redirect('ver_stacks_modelo', pk=pk)
+	progresso.finalizar()
+	progresso.save()
+	return redirect('ver_stacks_modelo', pk=pk)
 
 def modelo_new(request):
 	if not request.user.is_authenticated:
@@ -1804,12 +1865,13 @@ def stackModelo(pk, stack, rasters, progresso):
 	repo.data = stack[4:13]
 	repo.sat = stack[0:2]
 	add_p = 79/len(areas)
+	width = 0
+	height = 0
 	for area in areas:
 		id = str(area.pk)
-		print("Iniciando área"+id)
 		if utils.processoativo(progresso):
 			a = int(progresso.percent)+int(add_p)
-			progresso.movi(mov="Cortando área "+str(id), percent=str(a))
+			progresso.movi(mov="Cortando área "+str(id)+" "+area.descricao, percent=str(a))
 			progresso.save()
 		else:
 			return
@@ -1836,7 +1898,7 @@ def stackModelo(pk, stack, rasters, progresso):
 				print("path Já Criado")
 			else:
 				os.mkdir(path_stack)
-			corte_ok = separar_banda(path_repo, path_stack, modelo.sensor)
+			corte_ok, width, height = separar_banda(path_repo, path_stack, modelo.sensor, id)
 		else:
 			corte_ok = corte(id, repo, path, path_modelo+'masks/')
 		if corte_ok:
@@ -1847,11 +1909,16 @@ def stackModelo(pk, stack, rasters, progresso):
 						utils.cortar_tif(path_modelo + 'masks/', id,
 										 'repositorio/topodata/declividade_caldas.tif',
 										 path_area+'/declividade.tif')
+						if modelo.sensor.pk != 1:
+							utils.reamostrar_w(path_area+'/declividade.tif', path_area+'/declividade.tif', width, height)
 					if r.tag == 'Altitude':
 						print("Cortando Altitude")
 						utils.cortar_tif(path_modelo + 'masks/', id,
 										 'repositorio/topodata/altitude_caldas.tif',
 										 path_area+'/altitude.tif')
+						if modelo.sensor.pk != 1:
+							utils.reamostrar_w(path_area + '/altitude.tif', path_area + '/altitude.tif', width,
+										   height)
 					if (r.tag != 'Declividade' and r.tag != 'Altitude'):
 						print("Gerando Índice" + r.tag)
 						path_refer = path+'/cortes/'+modelo.sensor.bandReferencia+'.tif'
@@ -1875,29 +1942,35 @@ def stackModelo(pk, stack, rasters, progresso):
 			return False, "Erro ao cortar! Imagens fora da área de corte! Área: "+area.descricao
 	return True, ""
 
-def separar_banda(path_repo, path_destino, sensor):
+def separar_banda(path_repo, path_destino, sensor, area_id):
 	list_files = utils.list_filesinfolder(path_repo)
 	bands_sensor = Raster.objects.filter(satelite = sensor, isIndex = False)
+	w = 10
+	h = 10
 	for img in list_files:
 		a, e = os.path.splitext(str(img))
 		extensao = e
-		if extensao.upper() == '.JPG':
-			im = Image.open(path_repo+img)
-			bandas = im.split()
-			i = 0
-			for band in bandas:
-				band.save(path_destino + bands_sensor[i].tag + '.tif')
-				i = i + 1
-		else:
-			i = 1
-			img = rasterio.open(path_repo+img)
-			band_geo = img.profile
-			band_geo.update({"count": 1})
-			for b in bands_sensor:
-				with rasterio.open(path_destino + b.tag + '.tif', 'w', **band_geo) as dest:
-					dest.write(img.read(i), 1)
+		if a == area_id:
+			if extensao.upper() == '.JPG':
+				im = Image.open(path_repo+img)
+				w, h = im.size
+				bandas = im.split()
+				i = 0
+				for band in bandas:
+					band.save(path_destino + bands_sensor[i].tag + '.tif')
 					i = i + 1
-	return True
+			else:
+				i = 1
+				img = rasterio.open(path_repo+img)
+				h = img.shape[0]
+				w = img.shape[1]
+				band_geo = img.profile
+				band_geo.update({"count": 1})
+				for b in bands_sensor:
+					with rasterio.open(path_destino + b.tag + '.tif', 'w', **band_geo) as dest:
+						dest.write(img.read(i), 1)
+						i = i + 1
+	return True, w, h
 
 def corte(id, repo, path, path_mask):
 	print(path_mask)
